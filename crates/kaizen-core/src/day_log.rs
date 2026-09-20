@@ -1,4 +1,3 @@
-use std::time::Duration;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize)]
@@ -7,13 +6,13 @@ pub struct DayLog {
 }
 
 impl DayLog {
-    pub fn new(activity_duration: Duration) -> Self {
+    pub fn new(activity_duration_in_seconds: u64) -> Self {
         Self {
-            activity_duration_in_seconds: activity_duration.as_secs()
+            activity_duration_in_seconds
         }
     }
 
-    pub fn activity_duration(&self) -> Duration {
-        Duration::from_secs(self.activity_duration_in_seconds)
+    pub fn activity_duration(&self) -> u64 {
+        self.activity_duration_in_seconds
     }
 }

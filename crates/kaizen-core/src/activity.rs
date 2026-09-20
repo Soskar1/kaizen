@@ -1,17 +1,11 @@
 use std::io;
 use std::path::{Path};
 use chrono::{NaiveDate};
-use std::time::Duration;
 use thiserror::Error;
 use crate::day_log::DayLog;
 
-#[derive(Debug)]
-pub enum LogResult {
-    Created
-}
-
 #[derive(Error, Debug)]
-pub enum KaizenError {
+pub enum ActivityError {
     #[error("Invalid base directory")]
     InvalidBaseDirectory,
 
@@ -22,9 +16,9 @@ pub enum KaizenError {
     SerdeError(#[from] serde_json::Error),
 }
 
-pub fn log_activity(base_directory: &Path, activity_name: &str, date: NaiveDate, duration: Duration) -> Result<LogResult, KaizenError> {
+pub fn log_activity(base_directory: &Path, activity_name: &str, date: NaiveDate, duration_in_seconds: u64) -> Result<(), ActivityError> {
     if !base_directory.is_dir() {
-        return Err(KaizenError::InvalidBaseDirectory);
+        return Err(ActivityError::InvalidBaseDirectory);
     }
 
     let activity_directory = base_directory
@@ -37,13 +31,13 @@ pub fn log_activity(base_directory: &Path, activity_name: &str, date: NaiveDate,
     let day_log_file_name = date.format("%Y-%m-%d").to_string() + ".json";
     let activity_file = activity_directory.join(day_log_file_name);
 
-    let mut day_log = DayLog::new(duration);
+    let mut day_log = DayLog::new(duration_in_seconds);
 
     if activity_file.exists() {
         let serialized_activity = std::fs::read_to_string(&activity_file)?;
         day_log = serde_json::from_str(&serialized_activity)?;
 
-        let new_duration = duration + day_log.activity_duration();
+        let new_duration = duration_in_seconds + day_log.activity_duration();
         day_log = DayLog::new(new_duration);
     } else {
         std::fs::File::create(&activity_file)?;
@@ -52,7 +46,7 @@ pub fn log_activity(base_directory: &Path, activity_name: &str, date: NaiveDate,
     let serialized_log = serde_json::to_string(&day_log)?;
     std::fs::write(activity_file, serialized_log)?;
 
-    Ok(LogResult::Created)
+    Ok(())
 }
 
 #[cfg(test)]
@@ -70,7 +64,7 @@ mod tests {
         let activity_name = "test";
 
         // Act
-        let result = log_activity(temp_dir.path(), activity_name, date, Duration::from_mins(5));
+        let result = log_activity(temp_dir.path(), activity_name, date, 60);
 
         // Assert
         assert!(result.is_ok());
@@ -85,7 +79,7 @@ mod tests {
         let activity_name = "test";
 
         // Act
-        let result = log_activity(temp_dir.path(), activity_name, date, Duration::from_mins(5));
+        let result = log_activity(temp_dir.path(), activity_name, date, 60);
 
         // Assert
         assert!(result.is_ok());
@@ -102,11 +96,11 @@ mod tests {
         let date = NaiveDate::from_ymd_opt(2026, 9, 20).unwrap();
 
         // Act
-        let result = log_activity(&file_path, "test", date, Duration::from_mins(5));
+        let result = log_activity(&file_path, "test", date, 60);
 
         // Assert
         assert!(result.is_err());
-        assert_matches!(result, Err(KaizenError::InvalidBaseDirectory));
+        assert_matches!(result, Err(ActivityError::InvalidBaseDirectory));
     }
 
     #[test]
@@ -115,7 +109,7 @@ mod tests {
         let temp_dir = tempdir().unwrap();
         let date = NaiveDate::from_ymd_opt(2026, 9, 20).unwrap();
         let activity_name = "test";
-        let duration = Duration::from_mins(5);
+        let duration = 60;
 
         // Act
         let result = log_activity(temp_dir.path(), activity_name, date, duration);
@@ -136,7 +130,7 @@ mod tests {
         let temp_dir = tempdir().unwrap();
         let date = NaiveDate::from_ymd_opt(2026, 9, 20).unwrap();
         let activity_name = "test";
-        let duration = Duration::from_mins(5);
+        let duration = 60;
         let log_file_path = temp_dir.path().join(activity_name).join("2026-09-20.json");
 
         std::fs::create_dir_all(log_file_path.parent().unwrap()).unwrap();
@@ -154,6 +148,6 @@ mod tests {
         let log = std::fs::read_to_string(&log_file_path).unwrap();
 
         let day_log: DayLog = serde_json::from_str(&log).unwrap();
-        assert_eq!(day_log.activity_duration(), Duration::from_mins(10));
+        assert_eq!(day_log.activity_duration(), 120);
     }
 }
