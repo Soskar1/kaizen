@@ -5,6 +5,7 @@
       <sourceFolder url="file://$MODULE_DIR$/crates/kaizen-cli/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/crates/kaizen-core/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/crates/kaizen-api/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/crates/kaizen-web/src" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/target" />
     </content>
