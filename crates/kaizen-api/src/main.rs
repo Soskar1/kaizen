@@ -1,12 +1,20 @@
 use std::{env, fs, io};
 use std::path::Path;
 use axum::{routing::get, Router, Json};
-use axum::http::StatusCode;
+use axum::http::{HeaderValue, Method, StatusCode};
+use axum::http::header::CONTENT_TYPE;
+use tower_http::cors::CorsLayer;
 
 #[tokio::main]
 async fn main() {
+    let cors = CorsLayer::new()
+        .allow_methods([Method::GET, Method::POST])
+        .allow_origin("http://[::1]:8080".parse::<HeaderValue>().unwrap())
+        .allow_headers([CONTENT_TYPE]);
+
     let app = Router::new()
-        .route("/activities", get(get_activities).post(post_activities));
+        .route("/activities", get(get_activities).post(post_activities))
+        .layer(cors);
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
     axum::serve(listener, app).await.unwrap();

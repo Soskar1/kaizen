@@ -1,43 +1,27 @@
-use std::env;
-use std::path::{PathBuf};
-use chrono::Utc;
+mod client;
+
 use gloo_net::http::Request;
 use leptos::prelude::*;
 use leptos::logging::{error, log};
 use leptos::task::spawn_local;
-use kaizen_core::activity::log_activity;
+use crate::client::get_activities;
 
 fn main() {
     console_error_panic_hook::set_once();
     mount_to_body(App);
 }
 
-#[derive(Clone)]
-struct Activity {
-    id: u32,
-    name: &'static str
-}
-
 #[component]
 fn App() -> impl IntoView {
-    let activities = vec![
-        Activity {
-            id: 1,
-            name: "Learning",
-        },
-        Activity {
-            id: 2,
-            name: "Rust",
-        },
-        Activity {
-            id: 3,
-            name: "Reading",
-        },
-    ];
+    let (activities, set_activities) = signal(Vec::<String>::new());
+    let (selected_activity, set_selected_activity) = signal(String::new());
 
-
-
-    let (selected_activity, set_selected_activity) = signal(1_u32);
+    spawn_local(async move {
+            match get_activities().await {
+            Ok(activities) => { set_activities.set(activities); }
+            Err(error) => {leptos::logging::error!("Failed to get activities: {}", error); }
+        }
+    });
 
     view! {
         <main class="page">
@@ -46,23 +30,29 @@ fn App() -> impl IntoView {
                 <div class="streak">"🔥 41 day streak"</div>
             </header>
 
-            // <nav class="activities">
-            //     {activities
-            //     .into_iter()
-            //     .map(|activity| {
-            //         let id = activity.id;
-            //         let name = activity.name;
-            //
-            //         view! {
-            //             <button
-            //                 class:active=move || selected_activity.get() == id
-            //                 on:click=move |_| set_selected_activity.set(id)>
-            //                 {name}
-            //             </button>
-            //         }
-            //     })
-            //     .collect_view()}
-            // </nav>
+            <nav class="activities">
+                <For
+                    each=move || activities.get()
+                    key=|name| name.clone()
+                    children=move |name| {
+                        let name_for_class = name.clone();
+                        let name_for_click = name.clone();
+
+                        view! {
+                            <button class:active=move || {
+                                selected_activity.with(|selected| {
+                                    selected == &name_for_class
+                                })
+                            }
+                            on:click=move |_| {
+                                set_selected_activity.set(name_for_click.clone());
+                            }>
+                                {name}
+                            </button>
+                        }
+                    }
+                />
+            </nav>
 
             <section class="dashboard">
                 <article class="timer-card">
