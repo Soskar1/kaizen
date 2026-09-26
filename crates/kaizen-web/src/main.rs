@@ -14,7 +14,9 @@ fn main() {
 #[component]
 fn App() -> impl IntoView {
     let (activities, set_activities) = signal(Vec::<String>::new());
-    let (selected_activity, set_selected_activity) = signal(String::new());
+    
+    let selected_activity_signal = signal(String::new());
+    let (selected_activity, _) = selected_activity_signal;
 
     spawn_local(async move {
             match get_activities().await {
@@ -30,34 +32,7 @@ fn App() -> impl IntoView {
                 <div class="streak">"🔥 41 day streak"</div>
             </header>
 
-            <nav class="activities">
-                <For
-                    each=move || activities.get()
-                    key=|name| name.clone()
-                    children=move |name| {
-                        let name_for_class = name.clone();
-                        let name_for_click = name.clone();
-
-                        view! {
-                            <button class:active=move || {
-                                selected_activity.with(|selected| {
-                                    selected == &name_for_class
-                                })
-                            }
-                            on:click=move |_| {
-                                set_selected_activity.set(name_for_click.clone());
-                            }>
-                                {name}
-                            </button>
-                        }
-                    }
-                />
-
-                <button type="button"
-                        class="add-activity-button" on:click=move |_| {
-                    // TODO: Show add-activity-screen
-                }/>
-            </nav>
+            <ActivitiesTab activities={activities} selected_activity_signal={selected_activity_signal}/>
 
             <section class="dashboard">
                 <article class="timer-card">
@@ -106,6 +81,55 @@ fn App() -> impl IntoView {
                 </aside>
             </section>
         </main>
+    }
+}
+
+#[component]
+fn ActivitiesTab(
+    activities: ReadSignal<Vec<String>>,
+    selected_activity_signal: (ReadSignal<String>, WriteSignal<String>)
+) -> impl IntoView {
+    view! {
+        <nav class="activities">
+            <For
+                each=move || activities.get()
+                key=|name| name.clone()
+                children=move |name| {
+                    view! {
+                        <ActivityButton button_content={name} selected_activity_signal={selected_activity_signal} />
+                    }
+                }
+            />
+
+            <button type="button"
+                    class="add-activity-button" on:click=move |_| {
+                // TODO: Show add-activity-screen
+            }/>
+        </nav>
+    }
+}
+
+#[component]
+fn ActivityButton(
+    button_content: String,
+    selected_activity_signal: (ReadSignal<String>, WriteSignal<String>)
+) -> impl IntoView {
+    let name_for_class = button_content.clone();
+    let name_for_click = button_content.clone();
+
+    let (selected_activity, set_selected_activity) = selected_activity_signal;
+
+    view! {
+        <button class:active=move || {
+            selected_activity.with(|selected| {
+                selected == &name_for_class
+            })
+        }
+        on:click=move |_| {
+            set_selected_activity.set(name_for_click.clone());
+        }>
+            {button_content}
+        </button>
     }
 }
 
