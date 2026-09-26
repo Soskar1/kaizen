@@ -9,12 +9,20 @@ fn main() {
     mount_to_body(App);
 }
 
+#[derive(Clone)]
+enum Card {
+    Timer,
+    NewActivity
+}
+
 #[component]
 fn App() -> impl IntoView {
     let (activities, set_activities) = signal(Vec::<String>::new());
     
     let selected_activity_signal = signal(String::new());
     let (selected_activity, _) = selected_activity_signal;
+
+    let (current_card, set_current_card) = signal(Card::Timer);
 
     spawn_local(async move {
             match get_activities().await {
@@ -30,10 +38,25 @@ fn App() -> impl IntoView {
                 <div class="streak">"🔥 41 day streak"</div>
             </header>
 
-            <ActivitiesTab activities={activities} selected_activity_signal={selected_activity_signal}/>
+            <ActivitiesTab activities={activities} selected_activity_signal={selected_activity_signal} set_current_card={set_current_card}/>
 
             <section class="dashboard">
-                <TimerCard selected_activity={selected_activity}/>
+                { 
+                    move || match current_card.get() {
+                        Card::Timer => {
+                            view! {
+                                <TimerCard selected_activity={selected_activity}/>
+                            }
+                            .into_any()
+                        },
+                        Card::NewActivity => {
+                            view! {
+                                <NewActivityCard />
+                            }
+                            .into_any()
+                        }
+                    }
+                }
 
                 <aside class="statistics">
                     <StatCard title="TODAY" value="45m"/>
@@ -48,7 +71,8 @@ fn App() -> impl IntoView {
 #[component]
 fn ActivitiesTab(
     activities: ReadSignal<Vec<String>>,
-    selected_activity_signal: (ReadSignal<String>, WriteSignal<String>)
+    selected_activity_signal: (ReadSignal<String>, WriteSignal<String>),
+    set_current_card: WriteSignal<Card>
 ) -> impl IntoView {
     view! {
         <nav class="activities">
@@ -57,14 +81,15 @@ fn ActivitiesTab(
                 key=|name| name.clone()
                 children=move |name| {
                     view! {
-                        <ActivityButton button_content={name} selected_activity_signal={selected_activity_signal} />
+                        <ActivityButton button_content={name} selected_activity_signal={selected_activity_signal} set_current_card={set_current_card}/>
                     }
                 }
             />
 
-            <button type="button"
-                    class="add-activity-button" on:click=move |_| {
-                // TODO: Show add-activity-screen
+            <button 
+                type="button"
+                class="add-activity-button" on:click=move |_| {
+                    set_current_card.set(Card::NewActivity);
             }/>
         </nav>
     }
@@ -73,7 +98,8 @@ fn ActivitiesTab(
 #[component]
 fn ActivityButton(
     button_content: String,
-    selected_activity_signal: (ReadSignal<String>, WriteSignal<String>)
+    selected_activity_signal: (ReadSignal<String>, WriteSignal<String>),
+    set_current_card: WriteSignal<Card>
 ) -> impl IntoView {
     let name_for_class = button_content.clone();
     let name_for_click = button_content.clone();
@@ -88,6 +114,7 @@ fn ActivityButton(
         }
         on:click=move |_| {
             set_selected_activity.set(name_for_click.clone());
+            set_current_card.set(Card::Timer);
         }>
             {button_content}
         </button>
@@ -110,6 +137,15 @@ fn TimerCard(
             <button class="start-button">
                 "▶ Start"
             </button>
+        </article>
+    }
+}
+
+#[component]
+fn NewActivityCard() -> impl IntoView {
+    view! {
+        <article class="timer-card">
+            <span class="label">"New Activity"</span>
         </article>
     }
 }
