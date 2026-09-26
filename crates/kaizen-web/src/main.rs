@@ -1,8 +1,6 @@
 mod client;
 
-use gloo_net::http::Request;
 use leptos::prelude::*;
-use leptos::logging::{error, log};
 use leptos::task::spawn_local;
 use crate::client::get_activities;
 
@@ -35,44 +33,7 @@ fn App() -> impl IntoView {
             <ActivitiesTab activities={activities} selected_activity_signal={selected_activity_signal}/>
 
             <section class="dashboard">
-                <article class="timer-card">
-                    <span class="label">"TIMER"</span>
-                    <span class="category">
-                        {move || selected_activity.get()}
-                    </span>
-
-                    <div class="timer">"00:00:00"</div>
-
-                    <button class="start-button" on:click=move |_| {
-                        spawn_local(async move {
-                            let request = Request::post("http://localhost:3000/activities")
-                                .header("Content-Type", "text/plain")
-                                .body("Learning");
-
-                            let request = match request {
-                                Ok(request) => request,
-                                Err(error) => {
-                                    error!("Failed to build request: {error}");
-                                    return;
-                                }
-                            };
-                
-                            match request.send().await {
-                                Ok(response) if response.ok() => {
-                                    log!("Activity directory created");
-                                }
-                                Ok(response) => {
-                                    error!("Server returned status {}", response.status());
-                                }
-                                Err(error) => {
-                                    error!("Request failed: {error}");
-                                }
-                            }
-                        })
-                    }>
-                        "▶ Start"
-                    </button>
-                </article>
+                <TimerCard selected_activity={selected_activity}/>
 
                 <aside class="statistics">
                     <StatCard title="TODAY" value="45m"/>
@@ -130,6 +91,26 @@ fn ActivityButton(
         }>
             {button_content}
         </button>
+    }
+}
+
+#[component]
+fn TimerCard(
+    selected_activity: ReadSignal<String>
+) -> impl IntoView {
+    view! {
+        <article class="timer-card">
+            <span class="label">"TIMER"</span>
+            <span class="category">
+                {move || selected_activity.get()}
+            </span>
+
+            <div class="timer">"00:00:00"</div>
+
+            <button class="start-button">
+                "▶ Start"
+            </button>
+        </article>
     }
 }
 
