@@ -133,3 +133,59 @@ button {
         padding: 20px;
     }
 }
+
+.activities .add-activity-button {
+    width: 50px;
+    height: 50px;
+    padding: 0;
+
+    position: relative;
+    flex-shrink: 0;
+
+    background: transparent;
+    border: 2px dashed #d8c5a5;
+    border-radius: 14px;
+
+    cursor: pointer;
+
+    transition:
+        background-color 150ms ease,
+        border-color 150ms ease,
+        transform 100ms ease;
+}
+
+.add-activity-button::before,
+.add-activity-button::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+
+    width: 14px;
+    height: 1.5px;
+
+    background: #3d372f;
+    border-radius: 2px;
+
+    transform: translate(-50%, -50%);
+}
+
+.add-activity-button::after {
+    transform:
+        translate(-50%, -50%)
+        rotate(90deg);
+}
+
+.add-activity-button:hover {
+    background: #fffdf8;
+    border-color: #bca885;
+}
+
+.add-activity-button:active {
+    transform: translateY(1px);
+}
+
+.add-activity-button:focus-visible {
+    outline: 3px solid rgb(16 133 65 / 25%);
+    outline-offset: 3px;
+}

@@ -52,6 +52,11 @@ fn App() -> impl IntoView {
                         }
                     }
                 />
+
+                <button type="button"
+                        class="add-activity-button" on:click=move |_| {
+                    // TODO: Show add-activity-screen
+                }/>
             </nav>
 
             <section class="dashboard">
