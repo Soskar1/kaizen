@@ -1085,6 +1085,7 @@ dependencies = [
  "gloo-net 0.7.0",
  "kaizen-core",
  "leptos",
+ "thiserror 2.0.20",
 ]
 
 [[package]]

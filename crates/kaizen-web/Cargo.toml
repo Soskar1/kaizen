@@ -9,3 +9,4 @@ leptos = { version = "0.8.20", features = ["csr"] }
 console_error_panic_hook = "0.1.7"
 kaizen-core =  { path = "../kaizen-core" }
 gloo-net = "0.7.0"
+thiserror = "2.0.20"
