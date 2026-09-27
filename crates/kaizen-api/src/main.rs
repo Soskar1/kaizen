@@ -1,5 +1,5 @@
 use std::{env, fs, io};
-use std::path::Path;
+use std::path::{Component, Path};
 use axum::{routing::get, Router, Json};
 use axum::http::{HeaderValue, Method, StatusCode};
 use axum::http::header::CONTENT_TYPE;
@@ -50,14 +50,57 @@ fn read_activity_names(path: &Path) -> io::Result<Vec<String>> {
     Ok(activities)
 }
 
-async fn post_activities(body: String) -> StatusCode {
+async fn post_activities(body: String) -> Result<StatusCode, StatusCode> {
     let name = body.trim();
 
     println!("Received activity name: {name}");
 
-    fs::create_dir(format!("C:\\Projects\\Rust\\{name}")).unwrap();
+    let root_directory = env::current_dir().map_err(|error| {
+        eprintln!("Failed to get current directory: {:?}", error);
+        StatusCode::INTERNAL_SERVER_ERROR
+    })?;
 
-    StatusCode::CREATED
+    create_activity_folder(&root_directory, name).map_err(|error| {
+        match error.kind() {
+            io::ErrorKind::InvalidInput => StatusCode::BAD_REQUEST,
+            io::ErrorKind::AlreadyExists => StatusCode::CONFLICT,
+            _ => {
+                eprintln!("Failed to create an activity directory: {error:?}");
+                StatusCode::INTERNAL_SERVER_ERROR
+            }
+        }
+    })?;
+
+    Ok(StatusCode::CREATED)
+}
+
+fn create_activity_folder(root_directory: &Path, activity_folder_name: &str) -> io::Result<()> {
+    if activity_folder_name.is_empty() {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidInput,
+            "Activity name is empty"
+        ));
+    }
+
+    debug_assert!(!activity_folder_name.starts_with(" "));
+    debug_assert!(!activity_folder_name.ends_with(" "));
+    
+    let mut components = Path::new(activity_folder_name).components();
+    let first_part = components.next();
+    let second_part = components.next();
+    match (first_part, second_part) {
+        (Some(Component::Normal(_)), None) => {}
+        _ => {
+            return Err(io::Error::new(
+            io::ErrorKind::InvalidInput,
+            "Activity name must be a single directory name"
+        ));
+        }
+    }
+
+    let new_activity_path = root_directory.join(activity_folder_name);
+
+    fs::create_dir(new_activity_path)
 }
 
 #[cfg(test)]
@@ -95,5 +138,71 @@ mod tests {
         for expected_name in expected {
             assert!(activity_names.contains(&expected_name));
         }
+    }
+
+    #[rstest]
+    #[case("TestActivity")]
+    #[case("Test Activity")]
+    fn create_activity_folder_creates_folder(#[case] activity_name: &str) {
+        // Arrange
+        let temp_dir: tempfile::TempDir = tempdir().unwrap();
+        let temp_dir_path = temp_dir.path();
+        
+        // Act
+        let result = create_activity_folder(temp_dir_path, activity_name);
+
+        // Assert
+        assert!(result.is_ok());
+
+        let new_activity_directory_path = temp_dir_path.join(activity_name);
+        assert!(new_activity_directory_path.is_dir())
+    }
+
+    #[test]
+    fn create_activity_folder_does_not_allow_duplicates() {
+        // Arrange
+        let temp_dir: tempfile::TempDir = tempdir().unwrap();
+        let temp_dir_path = temp_dir.path();
+        let test_activity = "TestActivity";
+
+        let test_activity_path = temp_dir_path.join(test_activity);
+        fs::create_dir(test_activity_path).unwrap();
+
+        // Act
+        let result = create_activity_folder(temp_dir_path, test_activity);
+
+        // Assert
+        assert!(result.is_err())
+    }
+
+    #[rstest]
+    #[case("")]
+    #[case("/")]
+    #[case("\\")]
+    #[case("<")]
+    #[case(">")]
+    #[case(":")]
+    #[case("\"")]
+    #[case("|")]
+    #[case("?")]
+    #[case("*")]
+    #[case("asb<sdf")]
+    #[case("asb?sdf")]
+    #[case("hello\\world")]
+    #[case("./hello/world")]
+    #[case("C:\\something")]
+    #[case("..\\Outside")]
+    #[case("..")]
+    #[case(".")]
+    fn create_activity_folder_prohibits_invalid_activity_names(#[case] activity_name: &str) {
+        // Arrange
+        let temp_dir: tempfile::TempDir = tempdir().unwrap();
+        let temp_dir_path = temp_dir.path();
+
+        // Act
+        let result = create_activity_folder(temp_dir_path, activity_name);
+
+        // Assert
+        assert!(result.is_err())
     }
 }
