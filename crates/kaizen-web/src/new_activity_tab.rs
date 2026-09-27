@@ -35,11 +35,8 @@ pub fn NewActivityCard() -> impl IntoView {
                             let activity_name = activity_name.get();
 
                             spawn_local(async move {
-                                let result = create_activity(&activity_name).await;
-
-                                match result {
-                                    Ok(()) => {},
-                                    Err(error) => {leptos::logging::error!("Failed to create an activity: {}", error); }
+                                if let Err(error) = create_activity(&activity_name).await {
+                                    leptos::logging::error!("Failed to create an activity: {}", error);
                                 }
                             });
                         }

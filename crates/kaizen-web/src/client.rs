@@ -36,6 +36,7 @@ pub async fn get_activities() -> Result<Vec<String>, ServerError> {
 pub async fn create_activity(activity_name: &str) -> Result<(), ServerError> {
     let activities_address = activities_address();
     let response = Request::post(&activities_address)
+        .header("Content-Type", "text/plain; charset=utf8")
         .body(activity_name)?
         .send()
         .await?;
