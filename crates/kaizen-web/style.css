@@ -306,3 +306,73 @@ button {
         width: 100%;
     }
 }
+
+.timer-control-buttons {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.timer-control-button {
+    min-width: 125px;
+    padding: 15px 28px;
+
+    border: 2px solid;
+    border-radius: 17px;
+
+    font: inherit;
+    font-weight: 700;
+    white-space: nowrap;
+
+    cursor: pointer;
+
+    transition:
+        background-color 150ms ease,
+        border-color 150ms ease,
+        color 150ms ease,
+        transform 100ms ease;
+}
+
+.pause-button {
+    color: #8a6418;
+    background: #fff8e8;
+    border-color: #e4c47d;
+}
+
+.pause-button:hover {
+    color: #6f4d0d;
+    background: #ffefc7;
+    border-color: #cfaa58;
+}
+
+.stop-button {
+    color: #b23a32;
+    background: #fff5f3;
+    border-color: #e7aaa5;
+}
+
+.stop-button:hover {
+    color: #922d27;
+    background: #ffe5e1;
+    border-color: #d6837c;
+}
+
+.timer-control-button:active {
+    transform: translateY(1px);
+}
+
+.pause-button:focus-visible {
+    outline: 3px solid rgb(196 143 32 / 25%);
+    outline-offset: 3px;
+}
+
+.stop-button:focus-visible {
+    outline: 3px solid rgb(178 58 50 / 25%);
+    outline-offset: 3px;
+}
+
+.timer-control-button:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+    transform: none;
+}
