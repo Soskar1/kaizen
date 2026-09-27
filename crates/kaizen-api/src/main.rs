@@ -1,12 +1,24 @@
 use std::{env, fs, io};
-use std::path::{Component, Path};
+use std::path::{Component, Path, PathBuf};
+use axum::extract::State;
 use axum::{routing::get, Router, Json};
 use axum::http::{HeaderValue, Method, StatusCode};
 use axum::http::header::CONTENT_TYPE;
 use tower_http::cors::CorsLayer;
 
+#[derive(Clone)]
+struct AppState {
+    activities_directory: PathBuf
+}
+
 #[tokio::main]
-async fn main() {
+async fn main() -> io::Result<()> {
+    let activities_directory = env::current_dir()?;
+
+    let state = AppState {
+        activities_directory,
+    };
+
     let cors = CorsLayer::new()
         .allow_methods([Method::GET, Method::POST])
         .allow_origin("http://[::1]:8080".parse::<HeaderValue>().unwrap())
@@ -14,19 +26,15 @@ async fn main() {
 
     let app = Router::new()
         .route("/activities", get(get_activities).post(post_activities))
-        .layer(cors);
+        .layer(cors)
+        .with_state(state);
 
-    let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
-    axum::serve(listener, app).await.unwrap();
+    let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await?;
+    axum::serve(listener, app).await
 }
 
-async fn get_activities() -> Result<Json<Vec<String>>, StatusCode> {
-    let path = env::current_dir().map_err(|error| {
-        eprintln!("Failed to get current directory: {:?}", error);
-        StatusCode::INTERNAL_SERVER_ERROR
-    })?;
-    
-    let activities = read_activity_names(&path).map_err(|error|{
+async fn get_activities(State(state): State<AppState>) -> Result<Json<Vec<String>>, StatusCode> {
+    let activities = read_activity_names(&state.activities_directory).map_err(|error|{
         eprintln!("Failed to read activities: {:?}", error);
         StatusCode::INTERNAL_SERVER_ERROR
     })?;
@@ -50,17 +58,12 @@ fn read_activity_names(path: &Path) -> io::Result<Vec<String>> {
     Ok(activities)
 }
 
-async fn post_activities(body: String) -> Result<StatusCode, StatusCode> {
+async fn post_activities(State(state): State<AppState>, body: String) -> Result<StatusCode, StatusCode> {
     let name = body.trim();
 
     println!("Received activity name: {name}");
 
-    let root_directory = env::current_dir().map_err(|error| {
-        eprintln!("Failed to get current directory: {:?}", error);
-        StatusCode::INTERNAL_SERVER_ERROR
-    })?;
-
-    create_activity_folder(&root_directory, name).map_err(|error| {
+    create_activity_folder(&state.activities_directory, name).map_err(|error| {
         match error.kind() {
             io::ErrorKind::InvalidInput => StatusCode::BAD_REQUEST,
             io::ErrorKind::AlreadyExists => StatusCode::CONFLICT,
@@ -74,18 +77,18 @@ async fn post_activities(body: String) -> Result<StatusCode, StatusCode> {
     Ok(StatusCode::CREATED)
 }
 
-fn create_activity_folder(root_directory: &Path, activity_folder_name: &str) -> io::Result<()> {
-    if activity_folder_name.is_empty() {
+fn create_activity_folder(activities_directory: &Path, activity_name: &str) -> io::Result<()> {
+    if activity_name.is_empty() {
         return Err(io::Error::new(
             io::ErrorKind::InvalidInput,
             "Activity name is empty"
         ));
     }
 
-    debug_assert!(!activity_folder_name.starts_with(" "));
-    debug_assert!(!activity_folder_name.ends_with(" "));
+    debug_assert!(!activity_name.starts_with(" "));
+    debug_assert!(!activity_name.ends_with(" "));
     
-    let mut components = Path::new(activity_folder_name).components();
+    let mut components = Path::new(activity_name).components();
     let first_part = components.next();
     let second_part = components.next();
     match (first_part, second_part) {
@@ -98,7 +101,7 @@ fn create_activity_folder(root_directory: &Path, activity_folder_name: &str) -> 
         }
     }
 
-    let new_activity_path = root_directory.join(activity_folder_name);
+    let new_activity_path = activities_directory.join(activity_name);
 
     fs::create_dir(new_activity_path)
 }
