@@ -376,3 +376,35 @@ button {
     cursor: not-allowed;
     transform: none;
 }
+
+.resume-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+
+    color: white;
+    background: #108541;
+    border-color: #108541;
+}
+
+.resume-button:hover {
+    background: #0d7438;
+    border-color: #0d7438;
+}
+
+.resume-button:active {
+    background: #0b6631;
+    border-color: #0b6631;
+}
+
+.resume-button:focus-visible {
+    outline: 3px solid rgb(16 133 65 / 25%);
+    outline-offset: 3px;
+}
+
+.resume-button:disabled {
+    color: #718078;
+    background: #dfe8e2;
+    border-color: #dfe8e2;
+}
