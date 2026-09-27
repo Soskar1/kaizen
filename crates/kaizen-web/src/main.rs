@@ -53,7 +53,7 @@ fn App() -> impl IntoView {
                         },
                         Card::NewActivity => {
                             view! {
-                                <NewActivityCard />
+                                <NewActivityCard set_activities=set_activities/>
                             }
                             .into_any()
                         }

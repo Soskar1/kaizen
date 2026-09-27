@@ -1,9 +1,11 @@
-use leptos::{prelude::*, reactive::{spawn, spawn_local}};
+use leptos::{prelude::*, reactive::{spawn_local}};
 
-use crate::client::{ServerError, create_activity};
+use crate::client::{create_activity};
 
 #[component]
-pub fn NewActivityCard() -> impl IntoView {
+pub fn NewActivityCard(
+    set_activities: WriteSignal<Vec<String>>
+) -> impl IntoView {
     let activity_name = RwSignal::new("".to_string());
 
     view! {
@@ -37,6 +39,8 @@ pub fn NewActivityCard() -> impl IntoView {
                             spawn_local(async move {
                                 if let Err(error) = create_activity(&activity_name).await {
                                     leptos::logging::error!("Failed to create an activity: {}", error);
+                                } else {
+                                    set_activities.update(|activities| activities.push(activity_name));
                                 }
                             });
                         }
