@@ -2,6 +2,7 @@ mod client;
 mod timer_card;
 mod activities_tab;
 mod card;
+mod new_activity_tab;
 
 use leptos::prelude::*;
 use leptos::task::spawn_local;
@@ -9,6 +10,7 @@ use crate::client::get_activities;
 use crate::timer_card::TimerCard;
 use crate::activities_tab::ActivitiesTab;
 use crate::card::Card;
+use crate::new_activity_tab::NewActivityCard;
 
 fn main() {
     console_error_panic_hook::set_once();
@@ -65,15 +67,6 @@ fn App() -> impl IntoView {
                 </aside>
             </section>
         </main>
-    }
-}
-
-#[component]
-fn NewActivityCard() -> impl IntoView {
-    view! {
-        <article class="timer-card">
-            <span class="label">"New Activity"</span>
-        </article>
     }
 }
 
