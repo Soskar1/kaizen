@@ -28,7 +28,7 @@ pub fn TimerCard(
                 set_elapsed_seconds.set(started_at.elapsed().as_secs());
             }
         },
-        Duration::from_secs(1))
+        Duration::from_millis(200))
         .expect("Failed to create a timer interval");
 
     on_cleanup(move || {
