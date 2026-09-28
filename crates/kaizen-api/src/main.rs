@@ -19,10 +19,14 @@ async fn main() -> io::Result<()> {
         activities_directory,
     };
 
+    let allowed_origins = [
+        HeaderValue::from_static("http://127.0.0.1:8080"),
+        HeaderValue::from_static("http://[::1]:8080")
+    ];
+
     let cors = CorsLayer::new()
         .allow_methods([Method::GET, Method::POST])
-        .allow_origin("http://[::1]:8080".parse::<HeaderValue>().unwrap())
-        .allow_origin("http://127.0.0.1:8080".parse::<HeaderValue>().unwrap())
+        .allow_origin(allowed_origins)
         .allow_headers([CONTENT_TYPE]);
 
     let app = Router::new()
