@@ -1,10 +1,12 @@
+use chrono::{Local, NaiveDate};
 use std::time::{Duration};
-
-use leptos::prelude::*;
+use leptos::{prelude::*, reactive::{spawn_local}};
 
 // Need to use web_time instead of std, because Instant from std panics in web app
 // https://crates.io/crates/web-time
 use web_time::Instant;
+
+use crate::client::{log_activity_time};
 
 #[derive(Clone)]
 enum TimerControl {
@@ -18,7 +20,7 @@ pub fn TimerCard(
     selected_activity: ReadSignal<String>
 ) -> impl IntoView {
     let (elapsed_seconds, set_elapsed_seconds) = signal(0_u64);
-    let (accumulated_time_in_seconds, set_accumulated_time_in_seconds) = signal(0_64);
+    let (accumulated_time_in_seconds, set_accumulated_time_in_seconds) = signal(0_u64);
     let (started_at, set_started_at) = signal(None::<Instant>);
     let (timer_control_button, set_timer_control_button) = signal(TimerControl::Play);
 
@@ -66,6 +68,8 @@ pub fn TimerCard(
                         view! {
                             <PauseStopTimer
                                 elapsed_seconds=elapsed_seconds
+                                accumulated_time_in_seconds=accumulated_time_in_seconds
+                                selected_activity=selected_activity
                                 set_elapsed_seconds=set_elapsed_seconds
                                 set_accumulated_time_in_seconds=set_accumulated_time_in_seconds
                                 set_started_at=set_started_at
@@ -77,6 +81,9 @@ pub fn TimerCard(
                     TimerControl::ResumeStop => {
                         view! {
                             <ResumeStopTimer
+                                elapsed_seconds=elapsed_seconds
+                                accumulated_time_in_seconds=accumulated_time_in_seconds
+                                selected_activity=selected_activity
                                 set_elapsed_seconds=set_elapsed_seconds
                                 set_accumulated_time_in_seconds=set_accumulated_time_in_seconds
                                 set_started_at=set_started_at
@@ -111,6 +118,8 @@ fn StartTimer(
 #[component]
 fn PauseStopTimer(
     elapsed_seconds: ReadSignal<u64>,
+    accumulated_time_in_seconds: ReadSignal<u64>,
+    selected_activity: ReadSignal<String>,
     set_elapsed_seconds: WriteSignal<u64>,
     set_accumulated_time_in_seconds: WriteSignal<u64>,
     set_started_at: WriteSignal<Option<Instant>>,
@@ -136,6 +145,9 @@ fn PauseStopTimer(
             </button>
 
             <StopTimerButton
+                elapsed_seconds=elapsed_seconds
+                accumulated_time_in_seconds=accumulated_time_in_seconds
+                selected_activity=selected_activity
                 set_elapsed_seconds=set_elapsed_seconds
                 set_accumulated_time_in_seconds=set_accumulated_time_in_seconds
                 set_started_at=set_started_at
@@ -147,6 +159,9 @@ fn PauseStopTimer(
 
 #[component]
 fn ResumeStopTimer(
+    elapsed_seconds: ReadSignal<u64>,
+    accumulated_time_in_seconds: ReadSignal<u64>,
+    selected_activity: ReadSignal<String>,
     set_elapsed_seconds: WriteSignal<u64>,
     set_accumulated_time_in_seconds: WriteSignal<u64>,
     set_started_at: WriteSignal<Option<Instant>>,
@@ -169,6 +184,9 @@ fn ResumeStopTimer(
             </button>
 
             <StopTimerButton
+                elapsed_seconds=elapsed_seconds
+                accumulated_time_in_seconds=accumulated_time_in_seconds
+                selected_activity=selected_activity
                 set_elapsed_seconds=set_elapsed_seconds
                 set_accumulated_time_in_seconds=set_accumulated_time_in_seconds
                 set_started_at=set_started_at
@@ -180,6 +198,9 @@ fn ResumeStopTimer(
 
 #[component]
 fn StopTimerButton(
+    elapsed_seconds: ReadSignal<u64>,
+    accumulated_time_in_seconds: ReadSignal<u64>,
+    selected_activity: ReadSignal<String>,
     set_elapsed_seconds: WriteSignal<u64>,
     set_accumulated_time_in_seconds: WriteSignal<u64>,
     set_started_at: WriteSignal<Option<Instant>>,
@@ -190,12 +211,21 @@ fn StopTimerButton(
             type="button"
             class="timer-control-button stop-button"
             on:click=move |_| {
+                let total_duration = elapsed_seconds.get_untracked() + accumulated_time_in_seconds.get_untracked();
+
+                let activity_name = selected_activity.get_untracked();
+                let today = Local::now().date_naive();
+
                 set_elapsed_seconds.set(0);
                 set_accumulated_time_in_seconds.set(0);
                 set_started_at.set(None);
                 set_timer_control_button.set(TimerControl::Play);
 
-                // TODO: save to file
+                spawn_local(async move {
+                    if let Err(error) = log_activity_time(&activity_name, total_duration, today).await {
+                        leptos::logging::error!("Failed to log time! {}", error);
+                    }
+                });
             }
         >
             "⏹ Stop"
