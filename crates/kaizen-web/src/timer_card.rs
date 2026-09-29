@@ -47,7 +47,11 @@ pub fn TimerCard(
     let interval_handle = set_interval_with_handle(
         move || {
             if let Some(started_at) = started_at.get_untracked() {
-                set_elapsed_seconds.set(started_at.elapsed().as_secs());
+                let new_elapsed_seconds = started_at.elapsed().as_secs();
+
+                if elapsed_seconds.get_untracked() != new_elapsed_seconds {
+                    set_elapsed_seconds.set(new_elapsed_seconds);
+                }
             }
         },
         Duration::from_millis(200))
