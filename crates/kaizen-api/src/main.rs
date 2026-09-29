@@ -1,9 +1,13 @@
 use std::{env, fs, io};
 use std::path::{Component, Path, PathBuf};
 use axum::extract::State;
+use axum::routing::post;
 use axum::{routing::get, Router, Json};
 use axum::http::{HeaderValue, Method, StatusCode};
 use axum::http::header::CONTENT_TYPE;
+use chrono::NaiveDate;
+use kaizen_core::activity::log_activity;
+use serde::Deserialize;
 use tower_http::cors::CorsLayer;
 
 #[derive(Clone)]
@@ -31,6 +35,7 @@ async fn main() -> io::Result<()> {
 
     let app = Router::new()
         .route("/activities", get(get_activities).post(post_activities))
+        .route("/time", post(post_time))
         .layer(cors)
         .with_state(state);
 
@@ -109,6 +114,26 @@ fn create_activity_folder(activities_directory: &Path, activity_name: &str) -> i
     let new_activity_path = activities_directory.join(activity_name);
 
     fs::create_dir(new_activity_path)
+}
+
+async fn post_time(State(state): State<AppState>, Json(payload): Json<ActivityLog>) -> StatusCode {
+    match log_activity(&state.activities_directory, &payload.activity_name, payload.date, payload.activity_duration_in_seconds) {
+        Ok(()) => {
+            println!("Logged {0}sec for activity {1}", payload.activity_duration_in_seconds, payload.activity_name);
+            StatusCode::CREATED
+        }
+        Err(error) => {
+            eprintln!("Failed to log activity: {error}");
+            StatusCode::INTERNAL_SERVER_ERROR
+        }
+    }
+}
+
+#[derive(Deserialize)]
+struct ActivityLog {
+    activity_name: String,
+    activity_duration_in_seconds: u64,
+    date: NaiveDate
 }
 
 #[cfg(test)]
