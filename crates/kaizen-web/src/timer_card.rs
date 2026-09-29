@@ -27,7 +27,7 @@ pub fn TimerCard(
     let start_timer = start_timer_callback(set_started_at, set_timer_control_button);
 
     let pause_timer = pause_timer_callback(
-        elapsed_seconds,
+        started_at,
         set_elapsed_seconds,
         set_accumulated_time_in_seconds,
         set_started_at,
@@ -35,7 +35,7 @@ pub fn TimerCard(
     );
 
     let stop_timer = stop_timer_callback(
-        elapsed_seconds,
+        started_at,
         accumulated_time_in_seconds,
         selected_activity,
         set_elapsed_seconds,
@@ -194,18 +194,20 @@ fn start_timer_callback(
 }
 
 fn pause_timer_callback(
-    elapsed_seconds: ReadSignal<u64>,
+    started_at: ReadSignal<Option<Instant>>,
     set_elapsed_seconds: WriteSignal<u64>,
     set_accumulated_time_in_seconds: WriteSignal<u64>,
     set_started_at: WriteSignal<Option<Instant>>,
     set_timer_control_button: WriteSignal<TimerControl>
 ) -> Callback<()> {
     Callback::new(move |()| {
+        let elapsed_time = get_elapsed_time(started_at);
+
         set_started_at.set(None);
         set_timer_control_button.set(TimerControl::ResumeStop);
 
         set_accumulated_time_in_seconds.update(move |current_time| {
-            *current_time += elapsed_seconds.get()
+            *current_time += elapsed_time
         });
 
         set_elapsed_seconds.set(0);
@@ -213,7 +215,7 @@ fn pause_timer_callback(
 }
 
 fn stop_timer_callback(
-    elapsed_seconds: ReadSignal<u64>,
+    started_at: ReadSignal<Option<Instant>>,
     accumulated_time_in_seconds: ReadSignal<u64>,
     selected_activity: ReadSignal<String>,
     set_elapsed_seconds: WriteSignal<u64>,
@@ -222,7 +224,9 @@ fn stop_timer_callback(
     set_timer_control_button: WriteSignal<TimerControl>
 ) -> Callback<()> {
     Callback::new(move|()| {
-        let total_duration = elapsed_seconds.get_untracked() + accumulated_time_in_seconds.get_untracked();
+        let elapsed_time = get_elapsed_time(started_at);
+
+        let total_duration = elapsed_time + accumulated_time_in_seconds.get_untracked();
 
         let activity_name = selected_activity.get_untracked();
         let today = Local::now().date_naive();
@@ -238,4 +242,11 @@ fn stop_timer_callback(
             }
         });
     })
+}
+
+fn get_elapsed_time(started_at: ReadSignal<Option<Instant>>) -> u64 {
+    match started_at.get_untracked() {
+        Some(start_time) => start_time.elapsed().as_secs(),
+        None => 0
+    }
 }
