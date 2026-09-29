@@ -1,15 +1,15 @@
 use chrono::NaiveDate;
-use gloo_net::{Error::{self}, http::Request};
+use gloo_net::{
+    http::Request,
+    Error as GlooNetError,
+};
 use serde::Serialize;
 use thiserror::{self, Error};
 
 #[derive(Error, Debug)]
 pub enum ServerError {
     #[error(transparent)]
-    GlooNetError(#[from] Error),
-
-    #[error(transparent)]
-    SerdeError(#[from] serde_json::Error),
+    GlooNetError(#[from] GlooNetError),
 
     #[error("Server returned status {0}")]
     FailedRequest(u16)
@@ -45,7 +45,7 @@ pub async fn get_activities() -> Result<Vec<String>, ServerError> {
 pub async fn create_activity(activity_name: &str) -> Result<(), ServerError> {
     let activities_address = activities_address();
     let response = Request::post(&activities_address)
-        .header("Content-Type", "text/plain; charset=utf8")
+        .header("Content-Type", "text/plain; charset=utf-8")
         .body(activity_name)?
         .send()
         .await?;
@@ -64,12 +64,9 @@ pub async fn log_activity_time(activity_name: &str, activity_duration_in_seconds
         date
     };
 
-    let payload = serde_json::to_string(&activity_log)?;
-
     let time_address = time_address();
     let response = Request::post(&time_address)
-        .header("Content-Type", "application/json")
-        .body(payload)?
+        .json(&activity_log)?
         .send()
         .await?;
 
