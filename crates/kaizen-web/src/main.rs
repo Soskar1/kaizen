@@ -3,6 +3,7 @@ mod timer_card;
 mod activities_tab;
 mod card;
 mod new_activity_tab;
+mod activity_heatmap_card;
 
 use leptos::prelude::*;
 use leptos::task::spawn_local;
@@ -11,6 +12,7 @@ use crate::timer_card::TimerCard;
 use crate::activities_tab::ActivitiesTab;
 use crate::card::Card;
 use crate::new_activity_tab::NewActivityCard;
+use crate::activity_heatmap_card::ActivityHeatmapCard;
 
 fn main() {
     console_error_panic_hook::set_once();
@@ -66,6 +68,8 @@ fn App() -> impl IntoView {
                     <StatCard title="BEST DAY" value="3h 10m"/>
                 </aside>
             </section>
+
+            <ActivityHeatmapCard/>
         </main>
     }
 }
