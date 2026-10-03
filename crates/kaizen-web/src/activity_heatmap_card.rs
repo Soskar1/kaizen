@@ -1,6 +1,8 @@
-use chrono::NaiveDate;
+use chrono::{Duration, Local, NaiveDate};
 use leptos::prelude::*;
+use serde::Deserialize;
 
+#[derive(Deserialize)]
 struct DayActivity {
     duration_in_seconds: u64,
     date: NaiveDate
@@ -51,6 +53,11 @@ fn WeekdayLabels() -> impl IntoView {
 
 #[component]
 fn ActivityHeatmap() -> impl IntoView {
+    // get all logs: 365 before today date, today date, 5 days after
+    let today = Local::now().date_naive();
+    let from = today - Duration::days(365);
+    let to = today + Duration::days(5);
+
     view! {
         <div class="heatmap">
             {
