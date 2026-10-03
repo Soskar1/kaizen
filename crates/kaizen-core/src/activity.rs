@@ -32,14 +32,14 @@ pub fn log_activity(base_directory: &Path, activity_name: &str, date: NaiveDate,
 
     let activity_file = get_day_log_path(base_directory, activity_name, date);
 
-    let mut day_log = DayLog::new(duration_in_seconds);
+    let mut day_log = DayLog::new(date, duration_in_seconds);
 
     if activity_file.exists() {
         let serialized_activity = std::fs::read_to_string(&activity_file)?;
         day_log = serde_json::from_str(&serialized_activity)?;
 
         let new_duration = duration_in_seconds + day_log.activity_duration();
-        day_log = DayLog::new(new_duration);
+        day_log = DayLog::new(date, new_duration);
     } else {
         std::fs::File::create(&activity_file)?;
     }
@@ -154,7 +154,7 @@ mod tests {
 
         std::fs::create_dir_all(log_file_path.parent().unwrap()).unwrap();
 
-        let day_log = DayLog::new(duration);
+        let day_log = DayLog::new(date, duration);
         let serialized_log = serde_json::to_string(&day_log).unwrap();
         std::fs::write(&log_file_path, serialized_log).unwrap();
 
