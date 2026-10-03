@@ -120,10 +120,14 @@ fn validate_activity_name(activity_name: &str) -> io::Result<()> {
     }
 }
 
-async fn post_time(State(state): State<AppState>, Json(payload): Json<ActivityLog>) -> StatusCode {
-    match log_activity(&state.activities_directory, &payload.activity_name, payload.date, payload.activity_duration_in_seconds) {
+async fn post_time(
+    State(state): State<AppState>,
+    UriPath(activity_name): UriPath<String>,
+    Json(payload): Json<ActivityLog>
+) -> StatusCode {    
+    match log_activity(&state.activities_directory, &activity_name, payload.date, payload.activity_duration_in_seconds) {
         Ok(()) => {
-            println!("Logged {0}sec for activity {1}", payload.activity_duration_in_seconds, payload.activity_name);
+            println!("Logged {0}sec for activity {1}", payload.activity_duration_in_seconds, activity_name);
             StatusCode::CREATED
         }
         Err(error) => {
@@ -135,7 +139,6 @@ async fn post_time(State(state): State<AppState>, Json(payload): Json<ActivityLo
 
 #[derive(Deserialize)]
 struct ActivityLog {
-    activity_name: String,
     activity_duration_in_seconds: u64,
     date: NaiveDate
 }
