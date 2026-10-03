@@ -1,6 +1,6 @@
 use std::io;
 use std::path::{Path, PathBuf};
-use chrono::{NaiveDate};
+use chrono::{Duration, NaiveDate};
 use thiserror::Error;
 use crate::day_log::DayLog;
 
@@ -60,6 +60,29 @@ pub fn get_day_log(base_directory: &Path, activity_name: &str, date: NaiveDate) 
     let serialized_activity = std::fs::read_to_string(&day_log_path)?;
     let day_log: DayLog = serde_json::from_str(&serialized_activity)?;
     Ok(day_log)
+}
+
+pub fn get_day_log_range(base_directory: &Path, activity_name: &str, from: NaiveDate, to: NaiveDate) -> Result<Vec<DayLog>, ActivityError> {
+    let mut current_date = from;
+    let mut day_logs: Vec<DayLog> = vec!();
+    
+    while current_date <= to {
+        match get_day_log(&base_directory, &activity_name, current_date) {
+            Ok(day_log) => {
+                day_logs.push(day_log);
+            }
+            Err(ActivityError::LogNotFound) => {
+                // Intentionally skipping
+            }
+            Err(error) => {
+                return Err(error);
+            }
+        }
+
+        current_date += Duration::days(1);
+    }
+
+    Ok(day_logs)
 }
 
 fn get_day_log_path(base_directory: &Path, activity_name: &str, date: NaiveDate) -> PathBuf {

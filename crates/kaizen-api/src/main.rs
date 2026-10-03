@@ -5,7 +5,7 @@ use axum::{routing::get, Router, Json};
 use axum::http::{HeaderValue, Method, StatusCode};
 use axum::http::header::CONTENT_TYPE;
 use chrono::{Duration, NaiveDate};
-use kaizen_core::activity::{ActivityError, get_day_log, log_activity};
+use kaizen_core::activity::{ActivityError, get_day_log, get_day_log_range, log_activity};
 use kaizen_core::day_log::DayLog;
 use serde::Deserialize;
 use tower_http::cors::CorsLayer;
@@ -163,25 +163,14 @@ async fn get_time(
         }
     })?;
     
-    let mut current_date = range.from;
-    let mut day_logs: Vec<DayLog> = vec!();
-    while current_date <= range.to {
-        match get_day_log(&state.activities_directory, &activity_name, current_date) {
-            Ok(day_log) => {
-                day_logs.push(day_log);
-            }
-            Err(error) => {
-                match error {
-                    ActivityError::LogNotFound => {}
-                    _ => {
-                        eprintln!("{error:?}");
-                    }
-                }
+    let day_logs = get_day_log_range(&state.activities_directory, &activity_name, range.from, range.to).map_err(|error| {
+        match error {
+            _ => {
+                eprintln!("{error:?}");
+                StatusCode::INTERNAL_SERVER_ERROR
             }
         }
-
-        current_date += Duration::days(1);
-    }
+    })?;
 
     Ok(Json(day_logs))
 }
