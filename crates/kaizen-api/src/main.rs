@@ -5,7 +5,7 @@ use axum::{routing::get, Router, Json};
 use axum::http::{HeaderValue, Method, StatusCode};
 use axum::http::header::CONTENT_TYPE;
 use chrono::{Duration, NaiveDate};
-use kaizen_core::activity::{get_day_log, log_activity};
+use kaizen_core::activity::{ActivityError, get_day_log, log_activity};
 use kaizen_core::day_log::DayLog;
 use serde::Deserialize;
 use tower_http::cors::CorsLayer;
@@ -140,10 +140,16 @@ struct ActivityLog {
     date: NaiveDate
 }
 
+#[derive(Deserialize)]
+struct DateRange {
+    from: NaiveDate,
+    to: NaiveDate
+}
+
 async fn get_time(
     State(state): State<AppState>,
     UriPath(activity_name): UriPath<String>,
-    Query((from, to)): Query<(NaiveDate, NaiveDate)>
+    Query(range): Query<DateRange>
 ) -> Result<Json<Vec<DayLog>>, StatusCode> {
     validate_activity_name(&activity_name).map_err(|error| {
         match error.kind() {
@@ -154,15 +160,20 @@ async fn get_time(
         }
     })?;
     
-    let mut current_date = from;
+    let mut current_date = range.from;
     let mut day_logs: Vec<DayLog> = vec!();
-    while current_date < to {
+    while current_date <= range.to {
         match get_day_log(&state.activities_directory, &activity_name, current_date) {
             Ok(day_log) => {
                 day_logs.push(day_log);
             }
             Err(error) => {
-                eprint!("Failed to get an activity log: {error}");
+                match error {
+                    ActivityError::LogNotFound => {}
+                    _ => {
+                        eprintln!("{error:?}");
+                    }
+                }
             }
         }
 

@@ -9,6 +9,9 @@ pub enum ActivityError {
     #[error("Invalid base directory")]
     InvalidBaseDirectory,
 
+    #[error("Log file does not exist")]
+    LogNotFound,
+
     #[error("IO error")]
     IoError(#[from] io::Error),
 
@@ -49,6 +52,10 @@ pub fn log_activity(base_directory: &Path, activity_name: &str, date: NaiveDate,
 
 pub fn get_day_log(base_directory: &Path, activity_name: &str, date: NaiveDate) -> Result<DayLog, ActivityError> {
     let day_log_path = get_day_log_path(base_directory, activity_name, date);
+
+    if !day_log_path.exists() {
+        return Err(ActivityError::LogNotFound);
+    }
 
     let serialized_activity = std::fs::read_to_string(&day_log_path)?;
     let day_log: DayLog = serde_json::from_str(&serialized_activity)?;
