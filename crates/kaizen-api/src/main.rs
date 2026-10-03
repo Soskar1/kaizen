@@ -1,10 +1,10 @@
 use std::{env, fs, io};
 use std::path::{Component, Path, PathBuf};
-use axum::extract::{Query, State};
+use axum::extract::{Path as UriPath, Query, State};
 use axum::{routing::get, Router, Json};
 use axum::http::{HeaderValue, Method, StatusCode};
 use axum::http::header::CONTENT_TYPE;
-use chrono::NaiveDate;
+use chrono::{Duration, NaiveDate};
 use kaizen_core::activity::{get_day_log, log_activity};
 use kaizen_core::day_log::DayLog;
 use serde::Deserialize;
@@ -35,7 +35,7 @@ async fn main() -> io::Result<()> {
 
     let app = Router::new()
         .route("/activities", get(get_activities).post(post_activities))
-        .route("/time", get(get_time).post(post_time))
+        .route("/activities/{activity_name}/logs", get(get_time).post(post_time))
         .layer(cors)
         .with_state(state);
 
@@ -140,8 +140,12 @@ struct ActivityLog {
     date: NaiveDate
 }
 
-async fn get_time(State(state): State<AppState>, Query(payload): Query<GetActivityDayLogPayload>) -> Result<Json<DayLog>, StatusCode> {
-    validate_activity_name(&payload.activity_name).map_err(|error| {
+async fn get_time(
+    State(state): State<AppState>,
+    UriPath(activity_name): UriPath<String>,
+    Query((from, to)): Query<(NaiveDate, NaiveDate)>
+) -> Result<Json<Vec<DayLog>>, StatusCode> {
+    validate_activity_name(&activity_name).map_err(|error| {
         match error.kind() {
             _ => {
                 eprintln!("{error:?}");
@@ -150,21 +154,22 @@ async fn get_time(State(state): State<AppState>, Query(payload): Query<GetActivi
         }
     })?;
     
-    match get_day_log(&state.activities_directory, &payload.activity_name, payload.date) {
-        Ok(day_log) => {
-            Ok(Json(day_log))
+    let mut current_date = from;
+    let mut day_logs: Vec<DayLog> = vec!();
+    while current_date < to {
+        match get_day_log(&state.activities_directory, &activity_name, current_date) {
+            Ok(day_log) => {
+                day_logs.push(day_log);
+            }
+            Err(error) => {
+                eprint!("Failed to get an activity log: {error}");
+            }
         }
-        Err(error) => {
-            eprint!("Failed to get an activity log: {error}");
-            Err(StatusCode::INTERNAL_SERVER_ERROR)
-        }
-    }
-}
 
-#[derive(Deserialize)]
-struct GetActivityDayLogPayload {
-    activity_name: String,
-    date: NaiveDate
+        current_date += Duration::days(1);
+    }
+
+    Ok(Json(day_logs))
 }
 
 #[cfg(test)]
