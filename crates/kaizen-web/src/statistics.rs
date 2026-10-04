@@ -12,29 +12,29 @@ pub fn Statistics(
             {
                 move || {
                     let today = Local::now().date_naive();
-                    let today_duration = logged_activities_by_day
-                        .get()
-                        .and_then(|logs| logs.activity_duration(today))
-                        .unwrap_or_default();
-
-                    let today_text = format_duration(today_duration);
-
                     let current_week_start = get_current_week_start();
-                    let duration = logged_activities_by_day
-                        .get()
-                        .map(|logs| logs.duration_between(current_week_start, today))
-                        .unwrap_or_default();
+
+                    let (today_duration, week_duration, best_duration) = logged_activities_by_day.with(|logs| {
+                        logs.as_ref().map_or((0, 0, 0), |logs| {
+                            (
+                                logs.activity_duration(today).unwrap_or_default(),
+                                logs.duration_between(current_week_start, today),
+                                logs.max_duration()
+                            )
+                        })
+                    });
                     
-                    let week_text = format_duration(duration);
+                    let today_text = format_duration(today_duration);
+                    let week_text = format_duration(week_duration);
+                    let best_day_text = format_duration(best_duration);
 
                     view! {
                         <StatisticCard title="TODAY" value=today_text/>
                         <StatisticCard title="THIS WEEK" value=week_text/>
+                        <StatisticCard title="BEST DAY" value=best_day_text/>
                     }
                 }
             }
-
-            <StatisticCard title="BEST DAY" value="3h 10m"/>
         </aside>
     }
 }

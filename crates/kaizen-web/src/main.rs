@@ -151,6 +151,14 @@ impl ActivityLogRange {
     pub fn duration_sum(&self) -> u64 {
         self.logs.values().sum()
     }
+
+    pub fn max_duration(&self) -> u64 {
+        self.logs
+            .values()
+            .copied()
+            .max()
+            .unwrap_or_default()
+    }
 }
 
 fn on_activity_add(
