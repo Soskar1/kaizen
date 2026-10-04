@@ -10,6 +10,8 @@ pub fn ActivityHeatmapCard(
     view! {
         <section class="heatmap-card">
             <header class="heatmap-card-header">
+                <TotalLoggedTimeLabel logged_activites_by_day=logged_activites_by_day/>
+
                 <div class="heatmap-legend" aria-label="Activity level legend">
                     <span>"Less"</span>
 
@@ -30,6 +32,31 @@ pub fn ActivityHeatmapCard(
                 </div>
             </div>
         </section>
+    }
+}
+
+#[component]
+fn TotalLoggedTimeLabel(
+    logged_activites_by_day: ReadSignal<Option<ActivityLogRange>>
+) -> impl IntoView {
+    view! {
+        <div class="heatmap-total">
+        {
+            move || {
+                logged_activites_by_day.get().map(|logged_activities| {
+                    let duration = logged_activities.duration_sum() as i64;
+                    let minutes = (duration % 3600) / 60;
+                    let hours = duration / 3600;
+                    let time = format!("{hours}h {minutes}m");
+
+                    view! {
+                        <strong>{time}</strong>
+                        <span>" logged in the last year"</span>
+                    }
+                })
+            }
+        }
+        </div>
     }
 }
 

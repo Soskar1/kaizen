@@ -146,6 +146,10 @@ impl ActivityLogRange {
     pub fn activity_duration(&self, day: NaiveDate) -> Option<u64> {
         self.logs.get(&day).copied()
     }
+
+    pub fn duration_sum(&self) -> u64 {
+        self.logs.values().sum()
+    }
 }
 
 fn on_activity_add(
