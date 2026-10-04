@@ -72,7 +72,7 @@ fn App() -> impl IntoView {
                     }
                 }
 
-                <Staticstics/>
+                <Staticstics logged_activites_by_day=logged_activites_by_day/>
             </section>
 
             <ActivityHeatmapCard logged_activites_by_day=logged_activites_by_day/>

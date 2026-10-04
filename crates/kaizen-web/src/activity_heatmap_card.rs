@@ -1,7 +1,7 @@
 use chrono::{Duration};
 use leptos::{prelude::*};
 
-use crate::ActivityLogRange;
+use crate::{ActivityLogRange, statistics::get_hours_minutes_time};
 
 #[component]
 pub fn ActivityHeatmapCard(
@@ -44,10 +44,8 @@ fn TotalLoggedTimeLabel(
         {
             move || {
                 logged_activites_by_day.get().map(|logged_activities| {
-                    let duration = logged_activities.duration_sum() as i64;
-                    let minutes = (duration % 3600) / 60;
-                    let hours = duration / 3600;
-                    let time = format!("{hours}h {minutes}m");
+                    let duration = logged_activities.duration_sum();
+                    let time = get_hours_minutes_time(duration);
 
                     view! {
                         <strong>{time}</strong>
