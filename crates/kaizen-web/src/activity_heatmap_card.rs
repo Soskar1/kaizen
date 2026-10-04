@@ -1,15 +1,12 @@
-use chrono::{Duration, Local, NaiveDate};
-use leptos::prelude::*;
-use serde::Deserialize;
+use chrono::{Duration};
+use leptos::{prelude::*};
 
-#[derive(Deserialize)]
-struct DayActivity {
-    duration_in_seconds: u64,
-    date: NaiveDate
-}
+use crate::ActivityLogRange;
 
 #[component]
-pub fn ActivityHeatmapCard() -> impl IntoView {
+pub fn ActivityHeatmapCard(
+    logged_activites_by_day: ReadSignal<Option<ActivityLogRange>>
+) -> impl IntoView {
     view! {
         <section class="heatmap-card">
             <header class="heatmap-card-header">
@@ -29,7 +26,7 @@ pub fn ActivityHeatmapCard() -> impl IntoView {
             <div class="heatmap-scroll">
                 <div class="heatmap-content">
                     <WeekdayLabels/>
-                    <ActivityHeatmap/>
+                    <ActivityHeatmap logged_activites_by_day=logged_activites_by_day/>
                 </div>
             </div>
         </section>
@@ -52,20 +49,34 @@ fn WeekdayLabels() -> impl IntoView {
 }
 
 #[component]
-fn ActivityHeatmap() -> impl IntoView {
-    // get all logs: 365 before today date, today date, 5 days after
-    let today = Local::now().date_naive();
-    let from = today - Duration::days(365);
-    let to = today + Duration::days(5);
-
+fn ActivityHeatmap(
+    logged_activites_by_day: ReadSignal<Option<ActivityLogRange>>
+) -> impl IntoView {
     view! {
         <div class="heatmap">
             {
-                (0..371).map(|_| {
-                    view! {
-                        <div class="heatmap-day level-0"/>
-                    }
-                }).collect_view()
+                move || {
+                    logged_activites_by_day.get().map(|logged_activities| {
+                        let amount_of_days = (logged_activities.to() - logged_activities.from()).num_days() + 1;
+
+                        (0..amount_of_days).map(|day| {
+                            let day = logged_activities.from + Duration::days(day);
+
+                            match logged_activities.activity_duration(day) {
+                                Some(_) => {
+                                    view! {
+                                        <div class="heatmap-day level-1"/>
+                                    }
+                                }
+                                None => {
+                                    view! {
+                                        <div class="heatmap-day level-0"/>
+                                    }
+                                }
+                            }
+                        }).collect_view()
+                    })
+                }
             }
         </div>
     }

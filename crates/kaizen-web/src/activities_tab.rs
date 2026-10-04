@@ -1,11 +1,11 @@
 use leptos::prelude::*;
-use crate::card::Card;
 
 #[component]
 pub fn ActivitiesTab(
     activities: ReadSignal<Vec<String>>,
-    selected_activity_signal: (ReadSignal<String>, WriteSignal<String>),
-    set_current_card: WriteSignal<Card>
+    selected_activity: ReadSignal<String>,
+    on_activity_add: Callback<()>,
+    on_activity_change: Callback<String>
 ) -> impl IntoView {
     view! {
         <nav class="activities">
@@ -14,16 +14,17 @@ pub fn ActivitiesTab(
                 key=|name| name.clone()
                 children=move |name| {
                     view! {
-                        <ActivityButton button_content={name} selected_activity_signal={selected_activity_signal} set_current_card={set_current_card}/>
+                        <ActivityButton
+                            button_content=name
+                            selected_activity=selected_activity
+                            on_activity_change=on_activity_change/>
                     }
                 }
             />
 
             <button 
                 type="button"
-                class="add-activity-button" on:click=move |_| {
-                    set_current_card.set(Card::NewActivity);
-            }/>
+                class="add-activity-button" on:click=move |_| on_activity_add.run(())/>
         </nav>
     }
 }
@@ -31,13 +32,11 @@ pub fn ActivitiesTab(
 #[component]
 fn ActivityButton(
     button_content: String,
-    selected_activity_signal: (ReadSignal<String>, WriteSignal<String>),
-    set_current_card: WriteSignal<Card>
+    selected_activity: ReadSignal<String>,
+    on_activity_change: Callback<String>
 ) -> impl IntoView {
     let name_for_class = button_content.clone();
     let name_for_click = button_content.clone();
-
-    let (selected_activity, set_selected_activity) = selected_activity_signal;
 
     view! {
         <button class:active=move || {
@@ -45,10 +44,7 @@ fn ActivityButton(
                 selected == &name_for_class
             })
         }
-        on:click=move |_| {
-            set_selected_activity.set(name_for_click.clone());
-            set_current_card.set(Card::Timer);
-        }>
+        on:click=move |_| on_activity_change.run(name_for_click.clone())>
             {button_content}
         </button>
     }
