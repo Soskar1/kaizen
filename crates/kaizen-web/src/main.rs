@@ -17,7 +17,7 @@ use crate::activities_tab::ActivitiesTab;
 use crate::card::Card;
 use crate::new_activity_tab::NewActivityCard;
 use crate::activity_heatmap_card::ActivityHeatmapCard;
-use crate::statistics::Staticstics;
+use crate::statistics::Statistics;
 
 fn main() {
     console_error_panic_hook::set_once();
@@ -72,7 +72,7 @@ fn App() -> impl IntoView {
                     }
                 }
 
-                <Staticstics logged_activites_by_day=logged_activites_by_day/>
+                <Statistics logged_activities_by_day=logged_activites_by_day/>
             </section>
 
             <ActivityHeatmapCard logged_activites_by_day=logged_activites_by_day/>
@@ -128,8 +128,22 @@ impl ActivityLogRange {
         self.to
     }
 
-    pub fn activity_duration(&self, day: NaiveDate) -> Option<u64> {
-        self.logs.get(&day).copied()
+    pub fn get_activity_duration(&self, date: NaiveDate) -> Option<u64> {
+        self.logs.get(&date).copied()
+    }
+
+    pub fn get_activity_duration_from_range(&self, from: NaiveDate, to: NaiveDate) -> u64 {
+        let days = (to - from).num_days() + 1;
+
+        (0..days)
+            .map(|day_offset| {
+                let day = from + Duration::days(day_offset);
+                self.logs
+                    .get(&day)
+                    .copied()
+                    .unwrap_or_default()
+            })
+            .sum()
     }
 
     pub fn duration_sum(&self) -> u64 {

@@ -86,7 +86,7 @@ fn ActivityHeatmap(
 
                         (0..amount_of_days).map(|day_offset| {
                             let day = logged_activities.from + Duration::days(day_offset);
-                            let duration = logged_activities.activity_duration(day);
+                            let duration = logged_activities.get_activity_duration(day).unwrap_or_default();
                             let class = heatmap_day_class(duration);
 
                             view! {
@@ -100,10 +100,10 @@ fn ActivityHeatmap(
     }
 }
 
-fn heatmap_day_class(duration_seconds: Option<u64>) -> &'static str {
+fn heatmap_day_class(duration_seconds: u64) -> &'static str {
     const HOUR: u64 = 60 * 60;
 
-    match duration_seconds.unwrap_or(0) {
+    match duration_seconds {
         0 => "heatmap-day level-0",
         seconds if seconds < HOUR => "heatmap-day level-1",
         seconds if seconds < 2 * HOUR => "heatmap-day level-2",
