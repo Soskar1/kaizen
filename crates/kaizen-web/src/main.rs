@@ -4,6 +4,7 @@ mod activities_tab;
 mod card;
 mod new_activity_tab;
 mod activity_heatmap_card;
+mod statistics;
 
 use std::collections::HashMap;
 
@@ -16,6 +17,7 @@ use crate::activities_tab::ActivitiesTab;
 use crate::card::Card;
 use crate::new_activity_tab::NewActivityCard;
 use crate::activity_heatmap_card::ActivityHeatmapCard;
+use crate::statistics::Staticstics;
 
 fn main() {
     console_error_panic_hook::set_once();
@@ -70,28 +72,11 @@ fn App() -> impl IntoView {
                     }
                 }
 
-                <aside class="statistics">
-                    <StatCard title="TODAY" value="45m"/>
-                    <StatCard title="THIS WEEK" value="5h 20m"/>
-                    <StatCard title="BEST DAY" value="3h 10m"/>
-                </aside>
+                <Staticstics logged_activites_by_day=logged_activites_by_day/>
             </section>
 
             <ActivityHeatmapCard logged_activites_by_day=logged_activites_by_day/>
         </main>
-    }
-}
-
-#[component]
-fn StatCard(
-    #[prop(into)] title: String,
-    #[prop(into)] value: String
-) -> impl IntoView {
-    view! {
-        <article class="stat-card">
-            <span class="label">{title}</span>
-            <strong>{value}</strong>
-        </article>
     }
 }
 
