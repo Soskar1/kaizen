@@ -1,7 +1,7 @@
-use chrono::{Datelike, Duration, Local};
+use chrono::{Local};
 use leptos::{prelude::*};
 
-use crate::ActivityLogRange;
+use crate::{ActivityLogRange, get_current_week_start};
 
 #[component]
 pub fn Statistics(
@@ -14,30 +14,22 @@ pub fn Statistics(
                     let today = Local::now().date_naive();
                     let today_duration = logged_activities_by_day
                         .get()
-                        .and_then(|logs| logs.get_activity_duration(today))
+                        .and_then(|logs| logs.activity_duration(today))
                         .unwrap_or_default();
 
-                    let text = get_hours_minutes_time(today_duration);
+                    let today_text = format_duration(today_duration);
 
-                    view! {
-                        <StatisticCard title="TODAY" value=text/>
-                    }
-                }
-            }
-            
-            {
-                move || {
-                    let today = Local::now().date_naive();
-                    let current_week_start = today - Duration::days(today.weekday().num_days_from_monday() as i64);
+                    let current_week_start = get_current_week_start();
                     let duration = logged_activities_by_day
                         .get()
-                        .map(|logs| logs.get_activity_duration_from_range(current_week_start, today))
+                        .map(|logs| logs.duration_between(current_week_start, today))
                         .unwrap_or_default();
                     
-                    let text = get_hours_minutes_time(duration);
+                    let week_text = format_duration(duration);
 
                     view! {
-                        <StatisticCard title="THIS WEEK" value=text/>
+                        <StatisticCard title="TODAY" value=today_text/>
+                        <StatisticCard title="THIS WEEK" value=week_text/>
                     }
                 }
             }
@@ -60,8 +52,12 @@ fn StatisticCard(
     }
 }
 
-pub fn get_hours_minutes_time(duration: u64) -> String {
+pub fn format_duration(duration: u64) -> String {
     let minutes = (duration % 3600) / 60;
     let hours = duration / 3600;
-    format!("{hours}h {minutes}m")
+
+    match (hours, minutes) {
+        (0, minutes) => format!("{minutes}m"),
+        _ => format!("{hours}h {minutes}m")
+    }
 }

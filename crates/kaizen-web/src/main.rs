@@ -89,8 +89,7 @@ fn on_activity_change(
         set_selected_activity.set(activity_name.clone());
         set_current_card.set(Card::Timer);
 
-        let today = Local::now().date_naive();
-        let current_week_start = today - Duration::days(today.weekday().num_days_from_monday() as i64);
+        let current_week_start = get_current_week_start();
         let from = current_week_start - Duration::weeks(52);
         let to = from + Duration::days(370);
 
@@ -112,6 +111,11 @@ fn on_activity_change(
     })
 }
 
+pub fn get_current_week_start() -> NaiveDate {
+    let today = Local::now().date_naive();
+    today - Duration::days(today.weekday().num_days_from_monday() as i64)
+}
+
 #[derive(Clone)]
 pub struct ActivityLogRange {
     from: NaiveDate,
@@ -128,21 +132,19 @@ impl ActivityLogRange {
         self.to
     }
 
-    pub fn get_activity_duration(&self, date: NaiveDate) -> Option<u64> {
+    pub fn activity_duration(&self, date: NaiveDate) -> Option<u64> {
         self.logs.get(&date).copied()
     }
 
-    pub fn get_activity_duration_from_range(&self, from: NaiveDate, to: NaiveDate) -> u64 {
-        let days = (to - from).num_days() + 1;
+    pub fn duration_between(&self, from: NaiveDate, to: NaiveDate) -> u64 {
+        if from > to {
+            return 0;
+        }
 
-        (0..days)
-            .map(|day_offset| {
-                let day = from + Duration::days(day_offset);
-                self.logs
-                    .get(&day)
-                    .copied()
-                    .unwrap_or_default()
-            })
+        self.logs
+            .iter()
+            .filter(|(date, _)| **date >= from && **date <= to)
+            .map(|(_, duration)| *duration)
             .sum()
     }
 
