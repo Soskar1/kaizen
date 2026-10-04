@@ -24,11 +24,18 @@ fn main() {
     mount_to_body(App);
 }
 
+#[derive(Clone, PartialEq)]
+pub enum TimerState {
+    Idle,
+    Running
+}
+
 #[component]
 fn App() -> impl IntoView {
     let (activities, set_activities) = signal(Vec::<String>::new());
     let (selected_activity, set_selected_activity) = signal(String::new());
     let (logged_activites_by_day, set_logged_activites_by_day) = signal(None::<ActivityLogRange>);
+    let (timer_state, set_timer_state) = signal(TimerState::Idle);
     let (current_card, set_current_card) = signal(Card::Timer);
     let on_activity_add = on_activity_add(set_current_card);
     let on_activity_change = on_activity_change(set_current_card, set_selected_activity, set_logged_activites_by_day);
@@ -52,6 +59,7 @@ fn App() -> impl IntoView {
                 selected_activity=selected_activity
                 on_activity_add=on_activity_add
                 on_activity_change=on_activity_change
+                timer_state=timer_state
             />
 
             <section class="dashboard">
@@ -59,7 +67,10 @@ fn App() -> impl IntoView {
                     move || match current_card.get() {
                         Card::Timer => {
                             view! {
-                                <TimerCard selected_activity=selected_activity/>
+                                <TimerCard
+                                    selected_activity=selected_activity
+                                    set_timer_state=set_timer_state
+                                />
                             }
                             .into_any()
                         },
