@@ -10,6 +10,11 @@ pub fn ActivityHeatmapCard(
     view! {
         <section class="heatmap-card">
             <header class="heatmap-card-header">
+                <div class="heatmap-total">
+                    <strong>"0h 0m"</strong>
+                    <span>" logged in the selected period"</span>
+                </div>
+
                 <div class="heatmap-legend" aria-label="Activity level legend">
                     <span>"Less"</span>
 
