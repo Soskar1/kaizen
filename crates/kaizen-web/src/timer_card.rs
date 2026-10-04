@@ -6,7 +6,7 @@ use leptos::{prelude::*, reactive::spawn_local};
 // https://crates.io/crates/web-time
 use web_time::Instant;
 
-use crate::client::{log_activity_time};
+use crate::{TimerState, client::log_activity_time};
 
 #[derive(Clone)]
 enum TimerControl {
@@ -17,14 +17,15 @@ enum TimerControl {
 
 #[component]
 pub fn TimerCard(
-    selected_activity: ReadSignal<String>
+    selected_activity: ReadSignal<String>,
+    set_timer_state: WriteSignal<TimerState>
 ) -> impl IntoView {
     let (elapsed_seconds, set_elapsed_seconds) = signal(0_u64);
     let (accumulated_time_in_seconds, set_accumulated_time_in_seconds) = signal(0_u64);
     let (started_at, set_started_at) = signal(None::<Instant>);
     let (timer_control_button, set_timer_control_button) = signal(TimerControl::Play);
 
-    let start_timer = start_timer_callback(set_started_at, set_timer_control_button);
+    let start_timer = start_timer_callback(set_started_at, set_timer_control_button, set_timer_state);
 
     let pause_timer = pause_timer_callback(
         started_at,
@@ -41,7 +42,8 @@ pub fn TimerCard(
         set_elapsed_seconds,
         set_accumulated_time_in_seconds,
         set_started_at,
-        set_timer_control_button
+        set_timer_control_button,
+        set_timer_state
     );
 
     let interval_handle = set_interval_with_handle(
@@ -189,11 +191,13 @@ fn format_timer(duration_in_seconds: u64) -> String {
 
 fn start_timer_callback(
     set_started_at: WriteSignal<Option<Instant>>,
-    set_timer_control_button: WriteSignal<TimerControl>
+    set_timer_control_button: WriteSignal<TimerControl>,
+    set_timer_state: WriteSignal<TimerState>
 ) -> Callback<()> {
     Callback::new(move |()| {
         set_started_at.set(Some(Instant::now()));
         set_timer_control_button.set(TimerControl::PauseStop);
+        set_timer_state.set(TimerState::Running);
     })
 }
 
@@ -225,7 +229,8 @@ fn stop_timer_callback(
     set_elapsed_seconds: WriteSignal<u64>,
     set_accumulated_time_in_seconds: WriteSignal<u64>,
     set_started_at: WriteSignal<Option<Instant>>,
-    set_timer_control_button: WriteSignal<TimerControl>
+    set_timer_control_button: WriteSignal<TimerControl>,
+    set_timer_state: WriteSignal<TimerState>
 ) -> Callback<()> {
     Callback::new(move|()| {
         let elapsed_time = get_elapsed_time(started_at);
@@ -239,6 +244,7 @@ fn stop_timer_callback(
         set_accumulated_time_in_seconds.set(0);
         set_started_at.set(None);
         set_timer_control_button.set(TimerControl::Play);
+        set_timer_state.set(TimerState::Idle);
 
         spawn_local(async move {
             if let Err(error) = log_activity_time(&activity_name, total_duration, today).await {
