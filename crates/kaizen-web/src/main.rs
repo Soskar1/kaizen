@@ -17,7 +17,7 @@ use crate::activities_tab::ActivitiesTab;
 use crate::card::Card;
 use crate::new_activity_tab::NewActivityCard;
 use crate::activity_heatmap_card::ActivityHeatmapCard;
-use crate::statistics::Staticstics;
+use crate::statistics::Statistics;
 
 fn main() {
     console_error_panic_hook::set_once();
@@ -72,7 +72,7 @@ fn App() -> impl IntoView {
                     }
                 }
 
-                <Staticstics logged_activites_by_day=logged_activites_by_day/>
+                <Statistics logged_activities_by_day=logged_activites_by_day/>
             </section>
 
             <ActivityHeatmapCard logged_activites_by_day=logged_activites_by_day/>
@@ -89,8 +89,7 @@ fn on_activity_change(
         set_selected_activity.set(activity_name.clone());
         set_current_card.set(Card::Timer);
 
-        let today = Local::now().date_naive();
-        let current_week_start = today - Duration::days(today.weekday().num_days_from_monday() as i64);
+        let current_week_start = get_current_week_start();
         let from = current_week_start - Duration::weeks(52);
         let to = from + Duration::days(370);
 
@@ -112,6 +111,11 @@ fn on_activity_change(
     })
 }
 
+pub fn get_current_week_start() -> NaiveDate {
+    let today = Local::now().date_naive();
+    today - Duration::days(today.weekday().num_days_from_monday() as i64)
+}
+
 #[derive(Clone)]
 pub struct ActivityLogRange {
     from: NaiveDate,
@@ -128,8 +132,20 @@ impl ActivityLogRange {
         self.to
     }
 
-    pub fn activity_duration(&self, day: NaiveDate) -> Option<u64> {
-        self.logs.get(&day).copied()
+    pub fn activity_duration(&self, date: NaiveDate) -> Option<u64> {
+        self.logs.get(&date).copied()
+    }
+
+    pub fn duration_between(&self, from: NaiveDate, to: NaiveDate) -> u64 {
+        if from > to {
+            return 0;
+        }
+
+        self.logs
+            .iter()
+            .filter(|(date, _)| **date >= from && **date <= to)
+            .map(|(_, duration)| *duration)
+            .sum()
     }
 
     pub fn duration_sum(&self) -> u64 {
