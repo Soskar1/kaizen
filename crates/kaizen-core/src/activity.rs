@@ -1,6 +1,6 @@
 use std::io;
-use std::path::{Path};
-use chrono::{NaiveDate};
+use std::path::{Path, PathBuf};
+use chrono::{Duration, NaiveDate};
 use thiserror::Error;
 use crate::day_log::DayLog;
 
@@ -8,6 +8,9 @@ use crate::day_log::DayLog;
 pub enum ActivityError {
     #[error("Invalid base directory")]
     InvalidBaseDirectory,
+
+    #[error("Log file does not exist")]
+    LogNotFound,
 
     #[error("IO error")]
     IoError(#[from] io::Error),
@@ -21,24 +24,22 @@ pub fn log_activity(base_directory: &Path, activity_name: &str, date: NaiveDate,
         return Err(ActivityError::InvalidBaseDirectory);
     }
 
-    let activity_directory = base_directory
-        .join(activity_name);
+    let activity_directory = base_directory.join(activity_name);
 
     if !activity_directory.exists() {
         std::fs::create_dir_all(&activity_directory)?;
     }
 
-    let day_log_file_name = date.format("%Y-%m-%d").to_string() + ".json";
-    let activity_file = activity_directory.join(day_log_file_name);
+    let activity_file = get_day_log_path(base_directory, activity_name, date);
 
-    let mut day_log = DayLog::new(duration_in_seconds);
+    let mut day_log = DayLog::new(date, duration_in_seconds);
 
     if activity_file.exists() {
         let serialized_activity = std::fs::read_to_string(&activity_file)?;
         day_log = serde_json::from_str(&serialized_activity)?;
 
         let new_duration = duration_in_seconds + day_log.activity_duration();
-        day_log = DayLog::new(new_duration);
+        day_log = DayLog::new(date, new_duration);
     } else {
         std::fs::File::create(&activity_file)?;
     }
@@ -47,6 +48,47 @@ pub fn log_activity(base_directory: &Path, activity_name: &str, date: NaiveDate,
     std::fs::write(activity_file, serialized_log)?;
 
     Ok(())
+}
+
+pub fn get_day_log(base_directory: &Path, activity_name: &str, date: NaiveDate) -> Result<DayLog, ActivityError> {
+    let day_log_path = get_day_log_path(base_directory, activity_name, date);
+
+    if !day_log_path.exists() {
+        return Err(ActivityError::LogNotFound);
+    }
+
+    let serialized_activity = std::fs::read_to_string(&day_log_path)?;
+    let day_log: DayLog = serde_json::from_str(&serialized_activity)?;
+    Ok(day_log)
+}
+
+pub fn get_day_log_range(base_directory: &Path, activity_name: &str, from: NaiveDate, to: NaiveDate) -> Result<Vec<DayLog>, ActivityError> {
+    let mut current_date = from;
+    let mut day_logs: Vec<DayLog> = vec!();
+    
+    while current_date <= to {
+        match get_day_log(&base_directory, &activity_name, current_date) {
+            Ok(day_log) => {
+                day_logs.push(day_log);
+            }
+            Err(ActivityError::LogNotFound) => {
+                // Intentionally skipping
+            }
+            Err(error) => {
+                return Err(error);
+            }
+        }
+
+        current_date += Duration::days(1);
+    }
+
+    Ok(day_logs)
+}
+
+fn get_day_log_path(base_directory: &Path, activity_name: &str, date: NaiveDate) -> PathBuf {
+    let day_log_file_name = date.format("%Y-%m-%d").to_string() + ".json";
+    
+    base_directory.join(activity_name).join(day_log_file_name)
 }
 
 #[cfg(test)]
@@ -135,7 +177,7 @@ mod tests {
 
         std::fs::create_dir_all(log_file_path.parent().unwrap()).unwrap();
 
-        let day_log = DayLog::new(duration);
+        let day_log = DayLog::new(date, duration);
         let serialized_log = serde_json::to_string(&day_log).unwrap();
         std::fs::write(&log_file_path, serialized_log).unwrap();
 

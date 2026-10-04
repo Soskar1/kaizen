@@ -1,12 +1,12 @@
 use std::{env, fs, io};
 use std::path::{Component, Path, PathBuf};
-use axum::extract::State;
-use axum::routing::post;
+use axum::extract::{Path as UriPath, Query, State};
 use axum::{routing::get, Router, Json};
 use axum::http::{HeaderValue, Method, StatusCode};
 use axum::http::header::CONTENT_TYPE;
-use chrono::NaiveDate;
-use kaizen_core::activity::log_activity;
+use chrono::{NaiveDate};
+use kaizen_core::activity::{get_day_log_range, log_activity};
+use kaizen_core::day_log::DayLog;
 use serde::Deserialize;
 use tower_http::cors::CorsLayer;
 
@@ -35,7 +35,7 @@ async fn main() -> io::Result<()> {
 
     let app = Router::new()
         .route("/activities", get(get_activities).post(post_activities))
-        .route("/time", post(post_time))
+        .route("/activities/{activity_name}/logs", get(get_time).post(post_time))
         .layer(cors)
         .with_state(state);
 
@@ -88,6 +88,14 @@ async fn post_activities(State(state): State<AppState>, body: String) -> Result<
 }
 
 fn create_activity_folder(activities_directory: &Path, activity_name: &str) -> io::Result<()> {
+    validate_activity_name(activity_name)?;
+
+    let new_activity_path = activities_directory.join(activity_name);
+
+    fs::create_dir(new_activity_path)
+}
+
+fn validate_activity_name(activity_name: &str) -> io::Result<()> {
     if activity_name.is_empty() {
         return Err(io::Error::new(
             io::ErrorKind::InvalidInput,
@@ -102,7 +110,7 @@ fn create_activity_folder(activities_directory: &Path, activity_name: &str) -> i
     let first_part = components.next();
     let second_part = components.next();
     match (first_part, second_part) {
-        (Some(Component::Normal(_)), None) => {}
+        (Some(Component::Normal(_)), None) => {Ok(())}
         _ => {
             return Err(io::Error::new(
             io::ErrorKind::InvalidInput,
@@ -110,16 +118,16 @@ fn create_activity_folder(activities_directory: &Path, activity_name: &str) -> i
         ));
         }
     }
-
-    let new_activity_path = activities_directory.join(activity_name);
-
-    fs::create_dir(new_activity_path)
 }
 
-async fn post_time(State(state): State<AppState>, Json(payload): Json<ActivityLog>) -> StatusCode {
-    match log_activity(&state.activities_directory, &payload.activity_name, payload.date, payload.activity_duration_in_seconds) {
+async fn post_time(
+    State(state): State<AppState>,
+    UriPath(activity_name): UriPath<String>,
+    Json(payload): Json<ActivityLog>
+) -> StatusCode {    
+    match log_activity(&state.activities_directory, &activity_name, payload.date, payload.activity_duration_in_seconds) {
         Ok(()) => {
-            println!("Logged {0}sec for activity {1}", payload.activity_duration_in_seconds, payload.activity_name);
+            println!("Logged {0}sec for activity {1}", payload.activity_duration_in_seconds, activity_name);
             StatusCode::CREATED
         }
         Err(error) => {
@@ -131,9 +139,40 @@ async fn post_time(State(state): State<AppState>, Json(payload): Json<ActivityLo
 
 #[derive(Deserialize)]
 struct ActivityLog {
-    activity_name: String,
     activity_duration_in_seconds: u64,
     date: NaiveDate
+}
+
+#[derive(Deserialize)]
+struct DateRange {
+    from: NaiveDate,
+    to: NaiveDate
+}
+
+async fn get_time(
+    State(state): State<AppState>,
+    UriPath(activity_name): UriPath<String>,
+    Query(range): Query<DateRange>
+) -> Result<Json<Vec<DayLog>>, StatusCode> {
+    validate_activity_name(&activity_name).map_err(|error| {
+        match error.kind() {
+            _ => {
+                eprintln!("{error:?}");
+                StatusCode::INTERNAL_SERVER_ERROR
+            }
+        }
+    })?;
+    
+    let day_logs = get_day_log_range(&state.activities_directory, &activity_name, range.from, range.to).map_err(|error| {
+        match error {
+            _ => {
+                eprintln!("{error:?}");
+                StatusCode::INTERNAL_SERVER_ERROR
+            }
+        }
+    })?;
+
+    Ok(Json(day_logs))
 }
 
 #[cfg(test)]
