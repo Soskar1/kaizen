@@ -6,6 +6,7 @@ mod new_activity_tab;
 mod activity_heatmap_card;
 mod statistics;
 mod domain;
+mod application;
 
 use std::collections::HashMap;
 

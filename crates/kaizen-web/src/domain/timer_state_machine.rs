@@ -22,11 +22,11 @@ pub enum TimerEvent {
 }
 
 impl TimerState {
-    pub fn transition_at(self, event: TimerEvent) -> Self {
-        self.transition(event, Instant::now())
+    pub fn transition(self, event: TimerEvent) -> Self {
+        self.transition_at(event, Instant::now())
     }
 
-    fn transition(self, event: TimerEvent, now: Instant) -> Self {
+    fn transition_at(self, event: TimerEvent, now: Instant) -> Self {
         match (self, event) {
             (TimerState::Idle, TimerEvent::Play) => TimerState::Running {
                 started_at: now,
@@ -37,7 +37,7 @@ impl TimerState {
                 started_at,
                 accumulated_seconds
             }, TimerEvent::Pause) => TimerState::Paused {
-                accumulated_seconds: started_at.elapsed().as_secs() + accumulated_seconds
+                accumulated_seconds: now.duration_since(started_at).as_secs() + accumulated_seconds
             },
             
             (TimerState::Paused {
@@ -69,7 +69,7 @@ mod tests {
     })]
     fn stop_transitions_to_idle(#[case] state: TimerState) {
         // Arrange & Act
-        let result = state.transition_at(TimerEvent::Stop);
+        let result = state.transition(TimerEvent::Stop);
 
         // Assert
         assert_eq!(result, TimerState::Idle)
@@ -82,7 +82,7 @@ mod tests {
         let now = Instant::now();
 
         // Act
-        let result = state.transition(TimerEvent::Play, now);
+        let result = state.transition_at(TimerEvent::Play, now);
 
         // Assert
         assert_eq!(result, TimerState::Running { started_at: now, accumulated_seconds: 0 })
@@ -95,7 +95,7 @@ mod tests {
         let state = TimerState::Running { started_at: now, accumulated_seconds: 2 };
 
         // Act
-        let result = state.transition(TimerEvent::Pause, now);
+        let result = state.transition_at(TimerEvent::Pause, now);
 
         // Assert
         assert_eq!(result, TimerState::Paused { accumulated_seconds: 2 })
@@ -108,7 +108,7 @@ mod tests {
         let state = TimerState::Paused { accumulated_seconds: 2 };
 
         // Act
-        let result = state.transition(TimerEvent::Resume, now);
+        let result = state.transition_at(TimerEvent::Resume, now);
 
         // Assert
         assert_eq!(result, TimerState::Running { started_at: now, accumulated_seconds: 2 } )
@@ -135,9 +135,34 @@ mod tests {
     }, TimerEvent::Resume)]
     fn event_does_not_change_state(#[case] state: TimerState, #[case] event: TimerEvent) {
         // Arrange & Act
-        let result = state.clone().transition_at(event);
+        let result = state.clone().transition(event);
 
         // Assert
         assert_eq!(result, state)
+    }
+
+    #[test]
+    fn pause_adds_elapsed_time_to_accumulated_time() {
+        // Arrange
+        use std::time::Duration;
+
+        let started_at = Instant::now();
+        let now = started_at + Duration::from_secs(5);
+
+        let state = TimerState::Running {
+            started_at,
+            accumulated_seconds: 2,
+        };
+
+        // Act
+        let result = state.transition_at(TimerEvent::Pause, now);
+
+        // Assert
+        assert_eq!(
+            result,
+            TimerState::Paused {
+                accumulated_seconds: 7,
+            }
+        );
     }
 }
