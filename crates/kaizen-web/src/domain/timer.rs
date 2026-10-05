@@ -1,6 +1,8 @@
-use std::time::Instant;
+// Need to use web_time instead of std, because Instant from std panics in web app
+// https://crates.io/crates/web-time
+use web_time::Instant;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum TimerState {
     Idle,
     Running {
@@ -20,10 +22,14 @@ pub enum TimerEvent {
 }
 
 impl TimerState {
-    pub fn transition(self, event: TimerEvent) -> Self {
+    pub fn transition_at(self, event: TimerEvent) -> Self {
+        self.transition(event, Instant::now())
+    }
+
+    fn transition(self, event: TimerEvent, now: Instant) -> Self {
         match (self, event) {
             (TimerState::Idle, TimerEvent::Play) => TimerState::Running {
-                started_at: Instant::now(),
+                started_at: now,
                 accumulated_seconds: 0
             },
             
@@ -37,7 +43,7 @@ impl TimerState {
             (TimerState::Paused {
                 accumulated_seconds
             }, TimerEvent::Resume) => TimerState::Running {
-                started_at: Instant::now(),
+                started_at: now,
                 accumulated_seconds
             },
             
@@ -62,10 +68,76 @@ mod tests {
         accumulated_seconds: 10
     })]
     fn stop_transitions_to_idle(#[case] state: TimerState) {
-        // Act
-        let result = state.transition(TimerEvent::Stop);
+        // Arrange & Act
+        let result = state.transition_at(TimerEvent::Stop);
 
         // Assert
         assert_eq!(result, TimerState::Idle)
-    }    
+    }
+
+    #[test]
+    fn play_transitions_to_running() {
+        // Arrange
+        let state = TimerState::Idle;
+        let now = Instant::now();
+
+        // Act
+        let result = state.transition(TimerEvent::Play, now);
+
+        // Assert
+        assert_eq!(result, TimerState::Running { started_at: now, accumulated_seconds: 0 })
+    }
+
+    #[test]
+    fn pause_transitions_to_paused() {
+        // Arrange
+        let now = Instant::now();
+        let state = TimerState::Running { started_at: now, accumulated_seconds: 2 };
+
+        // Act
+        let result = state.transition(TimerEvent::Pause, now);
+
+        // Assert
+        assert_eq!(result, TimerState::Paused { accumulated_seconds: 2 })
+    }
+
+    #[test]
+    fn resume_transitions_to_running() {
+        // Arrange
+        let now = Instant::now();
+        let state = TimerState::Paused { accumulated_seconds: 2 };
+
+        // Act
+        let result = state.transition(TimerEvent::Resume, now);
+
+        // Assert
+        assert_eq!(result, TimerState::Running { started_at: now, accumulated_seconds: 2 } )
+    }
+
+    #[rstest]
+    #[case::running_play(TimerState::Running {
+        started_at: Instant::now(),
+        accumulated_seconds: 10
+    }, TimerEvent::Play)]
+    #[case::paused_play(TimerState::Paused {
+        accumulated_seconds: 10
+    }, TimerEvent::Play)]
+
+    #[case::idle_pause(TimerState::Idle, TimerEvent::Pause)]
+    #[case::paused_pause(TimerState::Paused {
+        accumulated_seconds: 10
+    }, TimerEvent::Pause)]
+
+    #[case::idle_resume(TimerState::Idle, TimerEvent::Resume)]
+    #[case::running_resume(TimerState::Running {
+        started_at: Instant::now(),
+        accumulated_seconds: 10
+    }, TimerEvent::Resume)]
+    fn event_does_not_change_state(#[case] state: TimerState, #[case] event: TimerEvent) {
+        // Arrange & Act
+        let result = state.clone().transition_at(event);
+
+        // Assert
+        assert_eq!(result, state)
+    }
 }
