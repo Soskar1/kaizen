@@ -85,7 +85,7 @@ fn ActivityHeatmap(
                         let amount_of_days = (logged_activities.to() - logged_activities.from()).num_days() + 1;
 
                         (0..amount_of_days).map(|day_offset| {
-                            let day = logged_activities.from + Duration::days(day_offset);
+                            let day = logged_activities.from() + Duration::days(day_offset);
                             let duration = logged_activities.activity_duration(day).unwrap_or_default();
                             let class = heatmap_day_class(duration);
 

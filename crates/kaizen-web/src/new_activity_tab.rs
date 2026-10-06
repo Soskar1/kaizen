@@ -1,6 +1,6 @@
 use leptos::{prelude::*, reactive::{spawn_local}};
 
-use crate::client::{create_activity};
+use crate::application::activity::try_create_activity;
 
 #[component]
 pub fn NewActivityCard(
@@ -37,8 +37,8 @@ pub fn NewActivityCard(
                             let activity_name = activity_name.get();
 
                             spawn_local(async move {
-                                if let Err(error) = create_activity(&activity_name).await {
-                                    leptos::logging::error!("Failed to create an activity: {}", error);
+                                if let Err(_) = try_create_activity(&activity_name).await {
+                                    leptos::logging::error!("Failed to create an activity.");
                                 } else {
                                     set_activities.update(|activities| activities.push(activity_name));
                                 }

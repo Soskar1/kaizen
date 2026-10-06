@@ -6,7 +6,7 @@ use leptos::{prelude::*, reactive::spawn_local};
 // https://crates.io/crates/web-time
 use web_time::Instant;
 
-use crate::{TimerState, client::log_activity_time};
+use crate::{TimerState, application::activity::try_log_activity_time};
 
 #[derive(Clone)]
 enum TimerControl {
@@ -247,8 +247,8 @@ fn stop_timer_callback(
         set_timer_state.set(TimerState::Idle);
 
         spawn_local(async move {
-            if let Err(error) = log_activity_time(&activity_name, total_duration, today).await {
-                leptos::logging::error!("Failed to log time! {}", error);
+            if let Err(_) = try_log_activity_time(&activity_name, total_duration, today).await {
+                leptos::logging::error!("Failed to log time!");
             }
         });
     })

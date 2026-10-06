@@ -1,22 +1,22 @@
-mod client;
 mod timer_card;
 mod activities_tab;
-mod card;
 mod new_activity_tab;
 mod activity_heatmap_card;
 mod statistics;
 mod domain;
 mod application;
-
-use std::collections::HashMap;
+mod presentation;
+mod integration;
 
 use chrono::{Datelike, Duration, Local, NaiveDate};
 use leptos::prelude::*;
 use leptos::task::spawn_local;
-use crate::client::{get_activities, get_activity_logs};
+use crate::application::activity::collect_logs;
+use crate::domain::activity_log_range::ActivityLogRange;
+use crate::integration::client::get_activities;
 use crate::timer_card::TimerCard;
 use crate::activities_tab::ActivitiesTab;
-use crate::card::Card;
+use crate::presentation::card::Card;
 use crate::new_activity_tab::NewActivityCard;
 use crate::activity_heatmap_card::ActivityHeatmapCard;
 use crate::statistics::Statistics;
@@ -107,17 +107,10 @@ fn on_activity_change(
         let to = from + Duration::days(370);
 
         spawn_local(async move {
-            match get_activity_logs(&activity_name, from, to).await {
-                Ok(logs) => {
-                    let activity_log_range = ActivityLogRange {
-                        from,
-                        to,
-                        logs
-                    };
-                    set_logged_activites_by_day.set(Some(activity_log_range));
-                }
-                Err(error) => {
-                    leptos::logging::error!("Failed to get activity logs in range from {} to {}. {}", from, to, error);
+            match collect_logs(&activity_name, from, to).await {
+                Some(logs) => set_logged_activites_by_day.set(Some(logs)),
+                None => {
+                    leptos::logging::error!("No logs received in range from {} to {}.", from, to);
                 }
             }
         });
@@ -127,51 +120,6 @@ fn on_activity_change(
 pub fn get_current_week_start() -> NaiveDate {
     let today = Local::now().date_naive();
     today - Duration::days(today.weekday().num_days_from_monday() as i64)
-}
-
-#[derive(Clone)]
-pub struct ActivityLogRange {
-    from: NaiveDate,
-    to: NaiveDate,
-    logs: HashMap<NaiveDate, u64>
-}
-
-impl ActivityLogRange {
-    pub fn from(&self) -> NaiveDate {
-        self.from
-    }
-
-    pub fn to(&self) -> NaiveDate {
-        self.to
-    }
-
-    pub fn activity_duration(&self, date: NaiveDate) -> Option<u64> {
-        self.logs.get(&date).copied()
-    }
-
-    pub fn duration_between(&self, from: NaiveDate, to: NaiveDate) -> u64 {
-        if from > to {
-            return 0;
-        }
-
-        self.logs
-            .iter()
-            .filter(|(date, _)| **date >= from && **date <= to)
-            .map(|(_, duration)| *duration)
-            .sum()
-    }
-
-    pub fn duration_sum(&self) -> u64 {
-        self.logs.values().sum()
-    }
-
-    pub fn max_duration(&self) -> u64 {
-        self.logs
-            .values()
-            .copied()
-            .max()
-            .unwrap_or_default()
-    }
 }
 
 fn on_activity_add(
