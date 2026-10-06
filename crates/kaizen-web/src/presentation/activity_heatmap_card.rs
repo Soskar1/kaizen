@@ -1,7 +1,7 @@
 use chrono::{Duration};
 use leptos::{prelude::*};
 
-use crate::{ActivityLogRange, statistics::format_duration};
+use crate::{ActivityLogRange, presentation::statistics::format_duration};
 
 #[component]
 pub fn ActivityHeatmapCard(

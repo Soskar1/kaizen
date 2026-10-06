@@ -1,8 +1,3 @@
-mod timer_card;
-mod activities_tab;
-mod new_activity_tab;
-mod activity_heatmap_card;
-mod statistics;
 mod domain;
 mod application;
 mod presentation;
@@ -11,25 +6,20 @@ mod integration;
 use chrono::{Datelike, Duration, Local, NaiveDate};
 use leptos::prelude::*;
 use leptos::task::spawn_local;
-use crate::application::activity::collect_logs;
+use crate::application::activity::{collect_logs, try_log_activity_time};
+use crate::application::timer::Timer;
 use crate::domain::activity_log_range::ActivityLogRange;
 use crate::integration::client::get_activities;
-use crate::timer_card::TimerCard;
-use crate::activities_tab::ActivitiesTab;
+use crate::presentation::activities_tab::ActivitiesTab;
+use crate::presentation::activity_heatmap_card::ActivityHeatmapCard;
 use crate::presentation::card::Card;
-use crate::new_activity_tab::NewActivityCard;
-use crate::activity_heatmap_card::ActivityHeatmapCard;
-use crate::statistics::Statistics;
+use crate::presentation::new_activity_tab::NewActivityCard;
+use crate::presentation::statistics::Statistics;
+use crate::presentation::timer_card::TimerCard;
 
 fn main() {
     console_error_panic_hook::set_once();
     mount_to_body(App);
-}
-
-#[derive(Clone, PartialEq)]
-pub enum TimerState {
-    Idle,
-    Running
 }
 
 #[component]
@@ -37,10 +27,21 @@ fn App() -> impl IntoView {
     let (activities, set_activities) = signal(Vec::<String>::new());
     let (selected_activity, set_selected_activity) = signal(String::new());
     let (logged_activites_by_day, set_logged_activites_by_day) = signal(None::<ActivityLogRange>);
-    let (timer_state, set_timer_state) = signal(TimerState::Idle);
     let (current_card, set_current_card) = signal(Card::Timer);
     let on_activity_add = on_activity_add(set_current_card);
     let on_activity_change = on_activity_change(set_current_card, set_selected_activity, set_logged_activites_by_day);
+
+    let (timer, set_timer) = signal(Timer::new());
+
+    let start_timer = Callback::new(move |()| {
+        set_timer.update(|timer| timer.start());
+    });
+
+    let pause_timer = Callback::new(move |()| {
+        set_timer.update(|timer| timer.pause());
+    });
+
+    let stop_timer = stop_timer(timer, set_timer, selected_activity);
 
     spawn_local(async move {
             match get_activities().await {
@@ -61,7 +62,7 @@ fn App() -> impl IntoView {
                 selected_activity=selected_activity
                 on_activity_add=on_activity_add
                 on_activity_change=on_activity_change
-                timer_state=timer_state
+                timer=timer
             />
 
             <section class="dashboard">
@@ -71,7 +72,10 @@ fn App() -> impl IntoView {
                             view! {
                                 <TimerCard
                                     selected_activity=selected_activity
-                                    set_timer_state=set_timer_state
+                                    timer=timer
+                                    start_timer=start_timer
+                                    pause_timer=pause_timer
+                                    stop_timer=stop_timer
                                 />
                             }
                             .into_any()
@@ -127,5 +131,26 @@ fn on_activity_add(
 ) -> Callback<()> {
     Callback::new(move |()| {
         set_current_card.set(Card::NewActivity);
+    })
+}
+
+fn stop_timer(
+    timer: ReadSignal<Timer>,
+    set_timer: WriteSignal<Timer>,
+    selected_activity: ReadSignal<String>
+) -> Callback<()> {
+    Callback::new(move |()| {
+        let elapsed_seconds = timer.with_untracked(|timer| timer.elapsed_seconds());
+        let activity_name = selected_activity.get_untracked();
+
+        set_timer.update(|timer| timer.stop());
+
+        let today = Local::now().date_naive();
+
+        spawn_local(async move {
+            if let Err(_) = try_log_activity_time(&activity_name, elapsed_seconds, today).await {
+                leptos::logging::error!("Failed to log time!");
+            }
+        });
     })
 }

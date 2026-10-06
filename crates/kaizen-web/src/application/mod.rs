@@ -1,2 +1,2 @@
-mod timer;
+pub mod timer;
 pub mod activity;
