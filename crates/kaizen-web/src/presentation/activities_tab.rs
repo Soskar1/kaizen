@@ -29,7 +29,10 @@ pub fn ActivitiesTab(
 
             <button 
                 type="button"
-                class="add-activity-button" on:click=move |_| on_activity_add.run(())/>
+                class="add-activity-button"
+                on:click=move |_| on_activity_add.run(())
+                disabled=move || timer.with(|timer| !timer.is_idle())
+                />
         </nav>
     }
 }
