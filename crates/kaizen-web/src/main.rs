@@ -41,7 +41,7 @@ fn App() -> impl IntoView {
         set_timer.update(|timer| timer.pause());
     });
 
-    let stop_timer = stop_timer(timer, set_timer, selected_activity);
+    let stop_timer = stop_timer(timer, set_timer, selected_activity, set_logged_activites_by_day);
 
     spawn_local(async move {
             match get_activities().await {
@@ -105,20 +105,26 @@ fn on_activity_change(
     Callback::new(move |activity_name: String| {
         set_selected_activity.set(activity_name.clone());
         set_current_card.set(Card::Timer);
-
-        let current_week_start = get_current_week_start();
-        let from = current_week_start - Duration::weeks(52);
-        let to = from + Duration::days(370);
-
-        spawn_local(async move {
-            match collect_logs(&activity_name, from, to).await {
-                Some(logs) => set_logged_activites_by_day.set(Some(logs)),
-                None => {
-                    leptos::logging::error!("No logs received in range from {} to {}.", from, to);
-                }
-            }
-        });
+        refresh_logs(activity_name, set_logged_activites_by_day);
     })
+}
+
+fn refresh_logs(
+    activity_name: String,
+    set_logged_activites_by_day: WriteSignal<Option<ActivityLogRange>>
+) {
+    let current_week_start = get_current_week_start();
+    let from = current_week_start - Duration::weeks(52);
+    let to = from + Duration::days(370);
+
+    spawn_local(async move {
+        match collect_logs(&activity_name, from, to).await {
+            Some(logs) => set_logged_activites_by_day.set(Some(logs)),
+            None => {
+                leptos::logging::error!("No logs received in range from {} to {}.", from, to);
+            }
+        }
+    });
 }
 
 pub fn get_current_week_start() -> NaiveDate {
@@ -137,7 +143,8 @@ fn on_activity_add(
 fn stop_timer(
     timer: ReadSignal<Timer>,
     set_timer: WriteSignal<Timer>,
-    selected_activity: ReadSignal<String>
+    selected_activity: ReadSignal<String>,
+    set_logged_activites_by_day: WriteSignal<Option<ActivityLogRange>>
 ) -> Callback<()> {
     Callback::new(move |()| {
         let elapsed_seconds = timer.with_untracked(|timer| timer.elapsed_seconds());
@@ -148,9 +155,14 @@ fn stop_timer(
         let today = Local::now().date_naive();
 
         spawn_local(async move {
-            if let Err(_) = try_log_activity_time(&activity_name, elapsed_seconds, today).await {
+            if try_log_activity_time(&activity_name, elapsed_seconds, today)
+            .await
+            .is_err() {
                 leptos::logging::error!("Failed to log time!");
+                return;
             }
+
+            refresh_logs(activity_name, set_logged_activites_by_day);
         });
     })
 }
