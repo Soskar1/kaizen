@@ -1,6 +1,6 @@
 use leptos::prelude::*;
 
-use crate::TimerState;
+use crate::application::timer::Timer;
 
 #[component]
 pub fn ActivitiesTab(
@@ -8,7 +8,7 @@ pub fn ActivitiesTab(
     selected_activity: ReadSignal<String>,
     on_activity_add: Callback<()>,
     on_activity_change: Callback<String>,
-    timer_state: ReadSignal<TimerState>
+    timer: ReadSignal<Timer>
 ) -> impl IntoView {
     view! {
         <nav class="activities">
@@ -21,7 +21,7 @@ pub fn ActivitiesTab(
                             button_content=name
                             selected_activity=selected_activity
                             on_activity_change=on_activity_change
-                            timer_state=timer_state
+                            timer=timer
                         />
                     }
                 }
@@ -29,7 +29,10 @@ pub fn ActivitiesTab(
 
             <button 
                 type="button"
-                class="add-activity-button" on:click=move |_| on_activity_add.run(())/>
+                class="add-activity-button"
+                on:click=move |_| on_activity_add.run(())
+                disabled=move || timer.with(|timer| !timer.is_idle())
+                />
         </nav>
     }
 }
@@ -39,7 +42,7 @@ fn ActivityButton(
     button_content: String,
     selected_activity: ReadSignal<String>,
     on_activity_change: Callback<String>,
-    timer_state: ReadSignal<TimerState>
+    timer: ReadSignal<Timer>
 ) -> impl IntoView {
     let name_for_class = button_content.clone();
     let name_for_click = button_content.clone();
@@ -51,7 +54,7 @@ fn ActivityButton(
             })
         }
 
-        disabled=move || timer_state.get() != TimerState::Idle
+        disabled=move || timer.with(|timer| !timer.is_idle())
 
         on:click=move |_| on_activity_change.run(name_for_click.clone())>
             {button_content}

@@ -1,33 +1,25 @@
-mod client;
-mod timer_card;
-mod activities_tab;
-mod card;
-mod new_activity_tab;
-mod activity_heatmap_card;
-mod statistics;
-
-use std::collections::HashMap;
+mod domain;
+mod application;
+mod presentation;
+mod integration;
 
 use chrono::{Datelike, Duration, Local, NaiveDate};
 use leptos::prelude::*;
 use leptos::task::spawn_local;
-use crate::client::{get_activities, get_activity_logs};
-use crate::timer_card::TimerCard;
-use crate::activities_tab::ActivitiesTab;
-use crate::card::Card;
-use crate::new_activity_tab::NewActivityCard;
-use crate::activity_heatmap_card::ActivityHeatmapCard;
-use crate::statistics::Statistics;
+use crate::application::activity::{collect_logs, try_log_activity_time};
+use crate::application::timer::Timer;
+use crate::domain::activity_log_range::ActivityLogRange;
+use crate::integration::client::get_activities;
+use crate::presentation::activities_tab::ActivitiesTab;
+use crate::presentation::activity_heatmap_card::ActivityHeatmapCard;
+use crate::presentation::card::Card;
+use crate::presentation::new_activity_tab::NewActivityCard;
+use crate::presentation::statistics::Statistics;
+use crate::presentation::timer_card::TimerCard;
 
 fn main() {
     console_error_panic_hook::set_once();
     mount_to_body(App);
-}
-
-#[derive(Clone, PartialEq)]
-pub enum TimerState {
-    Idle,
-    Running
 }
 
 #[component]
@@ -35,10 +27,21 @@ fn App() -> impl IntoView {
     let (activities, set_activities) = signal(Vec::<String>::new());
     let (selected_activity, set_selected_activity) = signal(String::new());
     let (logged_activites_by_day, set_logged_activites_by_day) = signal(None::<ActivityLogRange>);
-    let (timer_state, set_timer_state) = signal(TimerState::Idle);
     let (current_card, set_current_card) = signal(Card::Timer);
     let on_activity_add = on_activity_add(set_current_card);
     let on_activity_change = on_activity_change(set_current_card, set_selected_activity, set_logged_activites_by_day);
+
+    let (timer, set_timer) = signal(Timer::new());
+
+    let start_timer = Callback::new(move |()| {
+        set_timer.update(|timer| timer.start());
+    });
+
+    let pause_timer = Callback::new(move |()| {
+        set_timer.update(|timer| timer.pause());
+    });
+
+    let stop_timer = stop_timer(timer, set_timer, selected_activity);
 
     spawn_local(async move {
             match get_activities().await {
@@ -59,7 +62,7 @@ fn App() -> impl IntoView {
                 selected_activity=selected_activity
                 on_activity_add=on_activity_add
                 on_activity_change=on_activity_change
-                timer_state=timer_state
+                timer=timer
             />
 
             <section class="dashboard">
@@ -69,7 +72,10 @@ fn App() -> impl IntoView {
                             view! {
                                 <TimerCard
                                     selected_activity=selected_activity
-                                    set_timer_state=set_timer_state
+                                    timer=timer
+                                    start_timer=start_timer
+                                    pause_timer=pause_timer
+                                    stop_timer=stop_timer
                                 />
                             }
                             .into_any()
@@ -105,17 +111,10 @@ fn on_activity_change(
         let to = from + Duration::days(370);
 
         spawn_local(async move {
-            match get_activity_logs(&activity_name, from, to).await {
-                Ok(logs) => {
-                    let activity_log_range = ActivityLogRange {
-                        from,
-                        to,
-                        logs
-                    };
-                    set_logged_activites_by_day.set(Some(activity_log_range));
-                }
-                Err(error) => {
-                    leptos::logging::error!("Failed to get activity logs in range from {} to {}. {}", from, to, error);
+            match collect_logs(&activity_name, from, to).await {
+                Some(logs) => set_logged_activites_by_day.set(Some(logs)),
+                None => {
+                    leptos::logging::error!("No logs received in range from {} to {}.", from, to);
                 }
             }
         });
@@ -127,55 +126,31 @@ pub fn get_current_week_start() -> NaiveDate {
     today - Duration::days(today.weekday().num_days_from_monday() as i64)
 }
 
-#[derive(Clone)]
-pub struct ActivityLogRange {
-    from: NaiveDate,
-    to: NaiveDate,
-    logs: HashMap<NaiveDate, u64>
-}
-
-impl ActivityLogRange {
-    pub fn from(&self) -> NaiveDate {
-        self.from
-    }
-
-    pub fn to(&self) -> NaiveDate {
-        self.to
-    }
-
-    pub fn activity_duration(&self, date: NaiveDate) -> Option<u64> {
-        self.logs.get(&date).copied()
-    }
-
-    pub fn duration_between(&self, from: NaiveDate, to: NaiveDate) -> u64 {
-        if from > to {
-            return 0;
-        }
-
-        self.logs
-            .iter()
-            .filter(|(date, _)| **date >= from && **date <= to)
-            .map(|(_, duration)| *duration)
-            .sum()
-    }
-
-    pub fn duration_sum(&self) -> u64 {
-        self.logs.values().sum()
-    }
-
-    pub fn max_duration(&self) -> u64 {
-        self.logs
-            .values()
-            .copied()
-            .max()
-            .unwrap_or_default()
-    }
-}
-
 fn on_activity_add(
     set_current_card: WriteSignal<Card>
 ) -> Callback<()> {
     Callback::new(move |()| {
         set_current_card.set(Card::NewActivity);
+    })
+}
+
+fn stop_timer(
+    timer: ReadSignal<Timer>,
+    set_timer: WriteSignal<Timer>,
+    selected_activity: ReadSignal<String>
+) -> Callback<()> {
+    Callback::new(move |()| {
+        let elapsed_seconds = timer.with_untracked(|timer| timer.elapsed_seconds());
+        let activity_name = selected_activity.get_untracked();
+
+        set_timer.update(|timer| timer.stop());
+
+        let today = Local::now().date_naive();
+
+        spawn_local(async move {
+            if let Err(_) = try_log_activity_time(&activity_name, elapsed_seconds, today).await {
+                leptos::logging::error!("Failed to log time!");
+            }
+        });
     })
 }
