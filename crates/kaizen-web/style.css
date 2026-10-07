@@ -445,9 +445,76 @@ button {
     border-radius: 3px;
 }
 
+.heatmap-day {
+    position: relative;
+    padding: 0;
+    border: 0;
+    cursor: default;
+}
+
+.heatmap-day::after {
+    content: attr(data-tooltip);
+
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+
+    z-index: 10;
+
+    width: max-content;
+    max-width: 220px;
+    padding: 7px 10px;
+
+    color: white;
+    background: #29251f;
+    border-radius: 7px;
+
+    font-size: 12px;
+    font-weight: 600;
+    white-space: pre-line;
+    text-align: center;
+
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+
+    transition:
+        opacity 120ms ease,
+        visibility 120ms ease;
+}
+
+.heatmap-day::before {
+    content: "";
+
+    position: absolute;
+    bottom: calc(100% + 3px);
+    left: 50%;
+    transform: translateX(-50%);
+
+    z-index: 10;
+
+    border: 5px solid transparent;
+    border-top-color: #29251f;
+
+    opacity: 0;
+    visibility: hidden;
+}
+
+.heatmap-day:hover::after,
+.heatmap-day:hover::before,
+.heatmap-day:focus-visible::after,
+.heatmap-day:focus-visible::before {
+    opacity: 1;
+    visibility: visible;
+}
+
 .heatmap-scroll {
     width: 100%;
     overflow-x: auto;
+
+    /* Space for tooltips displayed above the cells */
+    padding-top: 50px;
 }
 
 .heatmap-content {

@@ -1,7 +1,7 @@
 use std::time::{Duration};
 use leptos::{prelude::*};
 
-use crate::{application::{timer::Timer}, domain::timer_state_machine::TimerState};
+use crate::{application::timer::Timer, domain::timer_state_machine::TimerState, presentation::text_formattings::format_hours_minutes_seconds};
 
 #[component]
 pub fn TimerCard(
@@ -41,7 +41,7 @@ pub fn TimerCard(
                             timer.elapsed_seconds()
                         });
 
-                        format_timer(elapsed_seconds)
+                        format_hours_minutes_seconds(elapsed_seconds)
                     }
                 }
             </div>
@@ -148,12 +148,4 @@ fn StopTimerButton(
             "⏹ Stop"
         </button>
     }
-}
-
-fn format_timer(duration_in_seconds: u64) -> String {
-    let hours = duration_in_seconds / 3600;
-    let minutes = (duration_in_seconds % 3600) / 60;
-    let seconds = duration_in_seconds % 60;
-
-    format!("{hours:02}:{minutes:02}:{seconds:02}")
 }

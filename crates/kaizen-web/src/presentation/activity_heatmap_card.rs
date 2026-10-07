@@ -1,7 +1,7 @@
 use chrono::{Duration};
 use leptos::{prelude::*};
 
-use crate::{ActivityLogRange, presentation::statistics::format_duration};
+use crate::{ActivityLogRange, presentation::text_formattings::format_hours_minutes};
 
 #[component]
 pub fn ActivityHeatmapCard(
@@ -45,7 +45,7 @@ fn TotalLoggedTimeLabel(
             move || {
                 logged_activites_by_day.get().map(|logged_activities| {
                     let duration = logged_activities.duration_sum();
-                    let time = format_duration(duration);
+                    let time = format_hours_minutes(duration);
 
                     view! {
                         <strong>{time}</strong>
@@ -88,9 +88,17 @@ fn ActivityHeatmap(
                             let day = logged_activities.from() + Duration::days(day_offset);
                             let duration = logged_activities.activity_duration(day).unwrap_or_default();
                             let class = heatmap_day_class(duration);
+                            
+                            let duration_text = format_hours_minutes(duration);
+                            let tooltip_text = format!("{day}\n{duration_text}");
 
                             view! {
-                                <div class=class/>
+                                <button
+                                    type="button"
+                                    class=class
+                                    data-tooltip=tooltip_text.clone()
+                                    aria-label=tooltip_text
+                                />
                             }
                         }).collect_view()
                     })
