@@ -513,8 +513,11 @@ button {
     width: 100%;
     overflow-x: auto;
 
-    /* Space for tooltips displayed above the cells */
+    /* Internal space where the tooltip can appear */
     padding-top: 50px;
+
+    /* Prevent the padding from moving the grid downward */
+    margin-top: -50px;
 }
 
 .heatmap-content {

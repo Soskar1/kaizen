@@ -92,6 +92,8 @@ fn ActivityHeatmap(
                             let duration_text = format_hours_minutes(duration);
                             let tooltip_text = format!("{day}\n{duration_text}");
 
+                            // TODO: tooltip here was made with workarounds
+                            // If this becomes a problem, maybe we need to redesign it
                             view! {
                                 <button
                                     type="button"
