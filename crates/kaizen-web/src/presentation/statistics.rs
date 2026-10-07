@@ -1,7 +1,7 @@
 use chrono::{Local};
 use leptos::{prelude::*};
 
-use crate::{ActivityLogRange, get_current_week_start};
+use crate::{ActivityLogRange, get_current_week_start, presentation::text_formattings::format_hours_minutes};
 
 #[component]
 pub fn Statistics(
@@ -24,9 +24,9 @@ pub fn Statistics(
                         })
                     });
                     
-                    let today_text = format_duration(today_duration);
-                    let week_text = format_duration(week_duration);
-                    let best_day_text = format_duration(best_duration);
+                    let today_text = format_hours_minutes(today_duration);
+                    let week_text = format_hours_minutes(week_duration);
+                    let best_day_text = format_hours_minutes(best_duration);
 
                     view! {
                         <StatisticCard title="TODAY" value=today_text/>
@@ -49,15 +49,5 @@ fn StatisticCard(
             <span class="label">{title}</span>
             <strong>{value}</strong>
         </article>
-    }
-}
-
-pub fn format_duration(duration: u64) -> String {
-    let minutes = (duration % 3600) / 60;
-    let hours = duration / 3600;
-
-    match (hours, minutes) {
-        (0, minutes) => format!("{minutes}m"),
-        _ => format!("{hours}h {minutes}m")
     }
 }
