@@ -37,12 +37,6 @@ button {
     font-weight: 700;
 }
 
-.activities {
-    display: flex;
-    gap: 12px;
-    margin: 28px 0 22px;
-}
-
 .activities button {
     padding: 14px 24px;
     border: 2px solid #eadfc9;
@@ -55,6 +49,61 @@ button {
     color: white;
     border-color: #108541;
     background: #108541;
+}
+
+.activities {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+
+    width: 100%;
+    min-width: 0;
+    margin: 28px 0 22px;
+}
+
+.activity-list {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+
+    flex: 1 1 auto;
+    min-width: 0;
+
+    overflow-x: auto;
+    padding-bottom: 4px;
+
+    scrollbar-width: thin;
+    scrollbar-color: #d8c5a5 transparent;
+}
+
+.activity-list::-webkit-scrollbar {
+    height: 6px;
+}
+
+.activity-list::-webkit-scrollbar-thumb {
+    background: #d8c5a5;
+    border-radius: 999px;
+}
+
+.activity-list button {
+    flex: 0 0 auto;
+
+    height: 50px;
+    max-width: 220px;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.activities .add-activity-button {
+    flex: 0 0 50px;
+    width: 50px;
+    height: 50px;
 }
 
 .dashboard {
@@ -123,10 +172,6 @@ button {
 @media (max-width: 750px) {
     .dashboard {
         grid-template-columns: 1fr;
-    }
-
-    .activities {
-        overflow-x: auto;
     }
 
     .page {
