@@ -12,20 +12,22 @@ pub fn ActivitiesTab(
 ) -> impl IntoView {
     view! {
         <nav class="activities">
-            <For
-                each=move || activities.get()
-                key=|name| name.clone()
-                children=move |name| {
-                    view! {
-                        <ActivityButton
-                            button_content=name
-                            selected_activity=selected_activity
-                            on_activity_change=on_activity_change
-                            timer=timer
-                        />
+            <div class="activity-list">
+                <For
+                    each=move || activities.get()
+                    key=|name| name.clone()
+                    children=move |name| {
+                        view! {
+                            <ActivityButton
+                                button_content=name
+                                selected_activity=selected_activity
+                                on_activity_change=on_activity_change
+                                timer=timer
+                            />
+                        }
                     }
-                }
-            />
+                />
+            </div>
 
             <button 
                 type="button"
