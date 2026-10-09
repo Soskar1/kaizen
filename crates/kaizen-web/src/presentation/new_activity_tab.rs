@@ -40,7 +40,10 @@ pub fn NewActivityCard(
                                 if let Err(_) = try_create_activity(&activity_name).await {
                                     leptos::logging::error!("Failed to create an activity.");
                                 } else {
-                                    set_activities.update(|activities| activities.push(activity_name));
+                                    set_activities.update(|activities| {
+                                        activities.push(activity_name);
+                                        activities.sort_by_key(|name| name.to_lowercase());
+                                    });
                                 }
                             });
                         }
