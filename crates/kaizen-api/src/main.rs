@@ -96,6 +96,35 @@ fn create_activity_folder(activities_directory: &Path, activity_name: &str) -> i
 }
 
 fn validate_activity_name(activity_name: &str) -> io::Result<()> {
+    const INVALID_CHARACTERS: [char; 9] = [
+        '<', '>', ':', '"', '/', '\\', '|', '?', '*',
+    ];
+
+    if activity_name.is_empty() {
+        return Err(invalid_activity_name("Activity name is empty"));
+    }
+
+    if activity_name.trim() != activity_name {
+        return Err(invalid_activity_name(
+            "Activity name cannot start or end with whitespace",
+        ));
+    }
+
+    if activity_name == "." || activity_name == ".." {
+        return Err(invalid_activity_name(
+            "Activity name cannot be '.' or '..'",
+        ));
+    }
+
+    if activity_name
+        .chars()
+        .any(|character| INVALID_CHARACTERS.contains(&character))
+    {
+        return Err(invalid_activity_name(
+            "Activity name contains an invalid character",
+        ));
+    }
+    
     if activity_name.is_empty() {
         return Err(io::Error::new(
             io::ErrorKind::InvalidInput,
@@ -118,6 +147,10 @@ fn validate_activity_name(activity_name: &str) -> io::Result<()> {
         ));
         }
     }
+}
+
+fn invalid_activity_name(message: &str) -> io::Error {
+    io::Error::new(io::ErrorKind::InvalidInput, message)
 }
 
 async fn post_time(
@@ -248,24 +281,22 @@ mod tests {
     }
 
     #[rstest]
-    #[case("")]
-    #[case("/")]
-    #[case("\\")]
-    #[case("<")]
-    #[case(">")]
-    #[case(":")]
-    #[case("\"")]
-    #[case("|")]
-    #[case("?")]
-    #[case("*")]
-    #[case("asb<sdf")]
-    #[case("asb?sdf")]
-    #[case("hello\\world")]
-    #[case("./hello/world")]
-    #[case("C:\\something")]
-    #[case("..\\Outside")]
-    #[case("..")]
-    #[case(".")]
+    #[case::empty("")]
+    #[case::forward_slash("/")]
+    #[case::backslash("\\")]
+    #[case::less("<")]
+    #[case::more(">")]
+    #[case::semicolon(":")]
+    #[case::quote("\"")]
+    #[case::vertical_bar("|")]
+    #[case::question_mark("?")]
+    #[case::asterisk("*")]
+    #[case::dot(".")]
+    #[case::between_valid_symbols("asb<sdf")]
+    #[case::relative_path("./hello/world")]
+    #[case::absolute_path_windows("C:\\something")]
+    #[case::escaping_current_directory("..\\Outside")]
+    #[case::parent_directory("..")]
     fn create_activity_folder_prohibits_invalid_activity_names(#[case] activity_name: &str) {
         // Arrange
         let temp_dir: tempfile::TempDir = tempdir().unwrap();
