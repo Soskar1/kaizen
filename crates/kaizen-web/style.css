@@ -664,52 +664,11 @@ button {
 }
 
 .welcome-description {
-    margin: 0 0 24px;
+    margin: 0 0 28px;
 
     color: #5c5143;
     font-size: 16px;
     line-height: 1.5;
-}
-
-.welcome-steps {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-
-    margin: 0 0 28px;
-    padding: 0;
-    list-style: none;
-}
-
-.welcome-steps li {
-    display: inline-flex;
-    align-items: center;
-    gap: 9px;
-
-    padding: 7px 14px 7px 7px;
-
-    color: #3d372f;
-    background: #fffaf2;
-    border: 2px solid #eee0c4;
-    border-radius: 999px;
-
-    font-size: 14px;
-    font-weight: 700;
-}
-
-.welcome-step-number {
-    width: 24px;
-    height: 24px;
-
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-
-    color: #087936;
-    background: #e1f5e8;
-    border-radius: 999px;
-
-    font-size: 12px;
 }
 
 .welcome-add-button {
@@ -727,24 +686,22 @@ button {
     justify-content: center;
 }
 
-.welcome-ring {
-    width: 190px;
-    height: 190px;
+.welcome-tiles {
+    display: grid;
+    grid-template-columns: repeat(7, 22px);
+    gap: 6px;
 
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    padding: 22px;
 
-    border-radius: 50%;
-    background:
-        radial-gradient(closest-side, white 82%, transparent 83%),
-        conic-gradient(#36b866 0 28%, #eee8dc 28% 100%);
+    background: #fffaf2;
+    border: 2px solid #eee0c4;
+    border-radius: 18px;
 }
 
-.welcome-ring span {
-    color: #c9bca4;
-    font-size: 30px;
-    font-weight: 800;
+.welcome-tile {
+    width: 22px;
+    height: 22px;
+    border-radius: 5px;
 }
 
 @media (max-width: 900px) {

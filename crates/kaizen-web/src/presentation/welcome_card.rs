@@ -15,21 +15,6 @@ pub fn WelcomeCard(
                     "Pick an activity above to start the timer, or create a new one. Even five minutes counts."
                 </p>
 
-                <ol class="welcome-steps">
-                    <li>
-                        <span class="welcome-step-number">"1"</span>
-                        <span>"Pick an activity"</span>
-                    </li>
-                    <li>
-                        <span class="welcome-step-number">"2"</span>
-                        <span>"Start the timer"</span>
-                    </li>
-                    <li>
-                        <span class="welcome-step-number">"3"</span>
-                        <span>"Keep the streak alive"</span>
-                    </li>
-                </ol>
-
                 <button
                     type="button"
                     class="create-activity-button welcome-add-button"
@@ -41,8 +26,42 @@ pub fn WelcomeCard(
             </div>
 
             <div class="welcome-illustration" aria-hidden="true">
-                <div class="welcome-ring">
-                    <span>"00:00"</span>
+                <div class="welcome-tiles">
+                    <span class="welcome-tile level-0"></span>
+                    <span class="welcome-tile level-1"></span>
+                    <span class="welcome-tile level-0"></span>
+                    <span class="welcome-tile level-0"></span>
+                    <span class="welcome-tile level-2"></span>
+                    <span class="welcome-tile level-1"></span>
+                    <span class="welcome-tile level-0"></span>
+                    <span class="welcome-tile level-1"></span>
+                    <span class="welcome-tile level-0"></span>
+                    <span class="welcome-tile level-2"></span>
+                    <span class="welcome-tile level-1"></span>
+                    <span class="welcome-tile level-0"></span>
+                    <span class="welcome-tile level-2"></span>
+                    <span class="welcome-tile level-1"></span>
+                    <span class="welcome-tile level-0"></span>
+                    <span class="welcome-tile level-2"></span>
+                    <span class="welcome-tile level-1"></span>
+                    <span class="welcome-tile level-3"></span>
+                    <span class="welcome-tile level-2"></span>
+                    <span class="welcome-tile level-1"></span>
+                    <span class="welcome-tile level-3"></span>
+                    <span class="welcome-tile level-2"></span>
+                    <span class="welcome-tile level-1"></span>
+                    <span class="welcome-tile level-3"></span>
+                    <span class="welcome-tile level-2"></span>
+                    <span class="welcome-tile level-4"></span>
+                    <span class="welcome-tile level-3"></span>
+                    <span class="welcome-tile level-2"></span>
+                    <span class="welcome-tile level-1"></span>
+                    <span class="welcome-tile level-3"></span>
+                    <span class="welcome-tile level-2"></span>
+                    <span class="welcome-tile level-4"></span>
+                    <span class="welcome-tile level-3"></span>
+                    <span class="welcome-tile level-4"></span>
+                    <span class="welcome-tile level-4"></span>
                 </div>
             </div>
         </article>
