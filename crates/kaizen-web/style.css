@@ -579,6 +579,9 @@ button {
     grid-template-rows: repeat(7, 13px);
     gap: 4px;
 
+    /* Line up with the heatmap below the month labels: label height + gap */
+    margin-top: 21px;
+
     flex-shrink: 0;
     width: 28px;
 
@@ -589,6 +592,28 @@ button {
 .weekday-labels span {
     display: flex;
     align-items: center;
+}
+
+.heatmap-grid {
+    display: grid;
+    gap: 6px;
+    flex: 1 0 auto;
+}
+
+.month-labels {
+    display: grid;
+    grid-template-rows: 15px;
+    grid-auto-columns: 13px;
+    gap: 4px;
+
+    color: #5c5143;
+    font-size: 11px;
+    line-height: 15px;
+}
+
+.month-labels span {
+    grid-row: 1;
+    white-space: nowrap;
 }
 
 .heatmap {
@@ -761,5 +786,9 @@ button {
 }
 
 .heatmap-content:has(.heatmap:empty) .weekday-labels {
+    display: none;
+}
+
+.heatmap-content:has(.heatmap:empty) .month-labels {
     display: none;
 }

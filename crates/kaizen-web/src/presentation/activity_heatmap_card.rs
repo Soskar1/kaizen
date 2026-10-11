@@ -7,6 +7,10 @@ use crate::{ActivityLogRange, presentation::text_formattings::format_hours_minut
 pub fn ActivityHeatmapCard(
     logged_activites_by_day: ReadSignal<Option<ActivityLogRange>>
 ) -> impl IntoView {
+    // TODO: build (month name, week column index) pairs from logged_activites_by_day.
+    // Column 0 is the first week shown in the heatmap.
+    let month_labels = Signal::derive(move || vec![("Nov".to_string(), 1)]);
+
     view! {
         <section class="heatmap-card">
             <header class="heatmap-card-header">
@@ -28,7 +32,11 @@ pub fn ActivityHeatmapCard(
             <div class="heatmap-scroll">
                 <div class="heatmap-content">
                     <WeekdayLabels/>
-                    <ActivityHeatmap logged_activites_by_day=logged_activites_by_day/>
+
+                    <div class="heatmap-grid">
+                        <MonthLabels labels=month_labels/>
+                        <ActivityHeatmap logged_activites_by_day=logged_activites_by_day/>
+                    </div>
                 </div>
             </div>
         </section>
@@ -69,6 +77,25 @@ fn WeekdayLabels() -> impl IntoView {
             <span>"Fri"</span>
             <span></span>
             <span>"Sun"</span>
+        </div>
+    }
+}
+
+#[component]
+fn MonthLabels(
+    #[prop(into)] labels: Signal<Vec<(String, usize)>>
+) -> impl IntoView {
+    view! {
+        <div class="month-labels" aria-hidden="true">
+            <For
+                each=move || labels.get()
+                key=|(_, column)| *column
+                children=|(name, column)| {
+                    view! {
+                        <span style=format!("grid-column: {}", column + 1)>{name}</span>
+                    }
+                }
+            />
         </div>
     }
 }
