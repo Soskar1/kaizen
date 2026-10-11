@@ -7,9 +7,29 @@ use crate::{ActivityLogRange, presentation::text_formattings::format_hours_minut
 pub fn ActivityHeatmapCard(
     logged_activites_by_day: ReadSignal<Option<ActivityLogRange>>
 ) -> impl IntoView {
-    // TODO: build (month name, week column index) pairs from logged_activites_by_day.
-    // Column 0 is the first week shown in the heatmap.
-    let month_labels = Signal::derive(move || vec![("Nov".to_string(), 1)]);
+    let month_labels = Signal::derive(move || {
+        logged_activites_by_day.with(|logs| {
+            match logs {
+                Some(logs) => {
+                    const DAYS_IN_COLUMN: i64 = 7;
+
+                    let amount_of_days = (logs.to() - logs.from()).num_days() + 1;
+                    let mut labels: Vec<(String, i64)> = (0..amount_of_days)
+                        .map(|day_offset| {
+                            let date = logs.from() + Duration::days(day_offset);
+                            let month = date.format("%b").to_string();
+                            (month, day_offset / DAYS_IN_COLUMN)
+                        })
+                        .collect::<Vec<(String, i64)>>();
+
+                    labels.dedup_by_key(|(_, column)| *column);
+
+                    labels
+                }
+                None => vec![]
+            }
+        })
+    });
 
     view! {
         <section class="heatmap-card">
@@ -83,7 +103,7 @@ fn WeekdayLabels() -> impl IntoView {
 
 #[component]
 fn MonthLabels(
-    #[prop(into)] labels: Signal<Vec<(String, usize)>>
+    #[prop(into)] labels: Signal<Vec<(String, i64)>>
 ) -> impl IntoView {
     view! {
         <div class="month-labels" aria-hidden="true">

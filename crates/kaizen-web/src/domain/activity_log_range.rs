@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use chrono::NaiveDate;
+use chrono::{Duration, NaiveDate};
 
 #[derive(Clone)]
 pub struct ActivityLogRange {
@@ -20,6 +20,10 @@ impl ActivityLogRange {
 
     pub fn to(&self) -> NaiveDate {
         self.to
+    }
+
+    pub fn exists(&self, date: NaiveDate) -> bool {
+        self.logs.contains_key(&date)
     }
 
     pub fn activity_duration(&self, date: NaiveDate) -> Option<u64> {
