@@ -28,7 +28,8 @@ fn App() -> impl IntoView {
     let (selected_activity, set_selected_activity) = signal(String::new());
     let (logged_activites_by_day, set_logged_activites_by_day) = signal(None::<ActivityLogRange>);
     let (current_card, set_current_card) = signal(Card::Timer);
-    let on_activity_add = on_activity_add(set_current_card);
+    
+    let on_activity_add = on_activity_add(set_selected_activity, set_current_card);
     let on_activity_change = on_activity_change(set_current_card, set_selected_activity, set_logged_activites_by_day);
 
     let (timer, set_timer) = signal(Timer::new());
@@ -133,10 +134,12 @@ pub fn get_current_week_start() -> NaiveDate {
 }
 
 fn on_activity_add(
+    set_selected_activity: WriteSignal<String>,
     set_current_card: WriteSignal<Card>
 ) -> Callback<()> {
     Callback::new(move |()| {
         set_current_card.set(Card::NewActivity);
+        set_selected_activity.set(String::from(""));
     })
 }
 
