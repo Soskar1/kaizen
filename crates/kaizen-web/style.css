@@ -579,9 +579,6 @@ button {
     grid-template-rows: repeat(7, 13px);
     gap: 4px;
 
-    /* Line up with the heatmap below the month labels: label height + gap */
-    margin-top: 21px;
-
     flex-shrink: 0;
     width: 28px;
 

@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use chrono::{Duration, NaiveDate};
+use chrono::{NaiveDate};
 
 #[derive(Clone)]
 pub struct ActivityLogRange {
@@ -22,8 +22,8 @@ impl ActivityLogRange {
         self.to
     }
 
-    pub fn exists(&self, date: NaiveDate) -> bool {
-        self.logs.contains_key(&date)
+    pub fn total_days(&self) -> i64 {
+        (self.to() - self.from()).num_days() + 1
     }
 
     pub fn activity_duration(&self, date: NaiveDate) -> Option<u64> {
@@ -100,6 +100,45 @@ mod tests {
 
         // Assert
         assert_eq!(result, date(25));
+    }
+
+    #[rstest]
+    #[case::single_day_range(21, 21, 1)]
+    #[case::includes_both_boundaries(20, 25, 6)]
+    #[case::whole_month(1, 30, 30)]
+    fn total_days_returns_inclusive_day_count(
+        #[case] from_day: u32,
+        #[case] to_day: u32,
+        #[case] expected_days: i64,
+    ) {
+        // Arrange
+        let logs = ActivityLogRange {
+            from: date(from_day),
+            to: date(to_day),
+            logs: HashMap::new(),
+        };
+
+        // Act
+        let result = logs.total_days();
+
+        // Assert
+        assert_eq!(result, expected_days);
+    }
+
+    #[test]
+    fn total_days_counts_across_year_boundary() {
+        // Arrange
+        let logs = ActivityLogRange {
+            from: NaiveDate::from_ymd_opt(2025, 12, 29).unwrap(),
+            to: NaiveDate::from_ymd_opt(2026, 1, 4).unwrap(),
+            logs: HashMap::new(),
+        };
+
+        // Act
+        let result = logs.total_days();
+
+        // Assert
+        assert_eq!(result, 7);
     }
 
     #[test]

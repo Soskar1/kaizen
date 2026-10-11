@@ -1,4 +1,4 @@
-use chrono::{Duration};
+use chrono::{Datelike, Duration};
 use leptos::{prelude::*};
 
 use crate::{ActivityLogRange, presentation::text_formattings::format_hours_minutes};
@@ -13,18 +13,15 @@ pub fn ActivityHeatmapCard(
                 Some(logs) => {
                     const DAYS_IN_COLUMN: i64 = 7;
 
-                    let amount_of_days = (logs.to() - logs.from()).num_days() + 1;
-                    let mut labels: Vec<(String, i64)> = (0..amount_of_days)
-                        .map(|day_offset| {
-                            let date = logs.from() + Duration::days(day_offset);
-                            let month = date.format("%b").to_string();
-                            (month, day_offset / DAYS_IN_COLUMN)
+                    let amount_of_columns = logs.total_days() / DAYS_IN_COLUMN;
+                    let column_start = |column: i64| logs.from() + Duration::days(column * DAYS_IN_COLUMN);
+
+                    (0..amount_of_columns)
+                        .filter(|&column| {
+                            column == 0 || column_start(column).month() != column_start(column - 1).month()
                         })
-                        .collect::<Vec<(String, i64)>>();
-
-                    labels.dedup_by_key(|(_, column)| *column);
-
-                    labels
+                        .map(|column| (column_start(column).format("%b").to_string(), column))
+                        .collect()
                 }
                 None => vec![]
             }
@@ -76,7 +73,7 @@ fn TotalLoggedTimeLabel(
                     let time = format_hours_minutes(duration);
 
                     view! {
-                        <strong>{time}</strong>
+                <strong>{time}</strong>
                         <span>" logged in the last year"</span>
                     }
                 })
@@ -129,7 +126,7 @@ fn ActivityHeatmap(
             {
                 move || {
                     logged_activites_by_day.get().map(|logged_activities| {
-                        let amount_of_days = (logged_activities.to() - logged_activities.from()).num_days() + 1;
+                        let amount_of_days = logged_activities.total_days();
 
                         (0..amount_of_days).map(|day_offset| {
                             let day = logged_activities.from() + Duration::days(day_offset);
