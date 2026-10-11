@@ -1,4 +1,4 @@
-use chrono::{Duration};
+use chrono::{Datelike, Duration};
 use leptos::{prelude::*};
 
 use crate::{ActivityLogRange, presentation::text_formattings::format_hours_minutes};
@@ -7,6 +7,27 @@ use crate::{ActivityLogRange, presentation::text_formattings::format_hours_minut
 pub fn ActivityHeatmapCard(
     logged_activites_by_day: ReadSignal<Option<ActivityLogRange>>
 ) -> impl IntoView {
+    let month_labels = Signal::derive(move || {
+        logged_activites_by_day.with(|logs| {
+            match logs {
+                Some(logs) => {
+                    const DAYS_IN_COLUMN: i64 = 7;
+
+                    let amount_of_columns = logs.total_days() / DAYS_IN_COLUMN;
+                    let column_start = |column: i64| logs.from() + Duration::days(column * DAYS_IN_COLUMN);
+
+                    (0..amount_of_columns)
+                        .filter(|&column| {
+                            column == 0 || column_start(column).month() != column_start(column - 1).month()
+                        })
+                        .map(|column| (column_start(column).format("%b").to_string(), column))
+                        .collect()
+                }
+                None => vec![]
+            }
+        })
+    });
+
     view! {
         <section class="heatmap-card">
             <header class="heatmap-card-header">
@@ -28,7 +49,11 @@ pub fn ActivityHeatmapCard(
             <div class="heatmap-scroll">
                 <div class="heatmap-content">
                     <WeekdayLabels/>
-                    <ActivityHeatmap logged_activites_by_day=logged_activites_by_day/>
+
+                    <div class="heatmap-grid">
+                        <MonthLabels labels=month_labels/>
+                        <ActivityHeatmap logged_activites_by_day=logged_activites_by_day/>
+                    </div>
                 </div>
             </div>
         </section>
@@ -48,7 +73,7 @@ fn TotalLoggedTimeLabel(
                     let time = format_hours_minutes(duration);
 
                     view! {
-                        <strong>{time}</strong>
+                <strong>{time}</strong>
                         <span>" logged in the last year"</span>
                     }
                 })
@@ -74,6 +99,25 @@ fn WeekdayLabels() -> impl IntoView {
 }
 
 #[component]
+fn MonthLabels(
+    #[prop(into)] labels: Signal<Vec<(String, i64)>>
+) -> impl IntoView {
+    view! {
+        <div class="month-labels" aria-hidden="true">
+            <For
+                each=move || labels.get()
+                key=|(_, column)| *column
+                children=|(name, column)| {
+                    view! {
+                        <span style=format!("grid-column: {}", column + 1)>{name}</span>
+                    }
+                }
+            />
+        </div>
+    }
+}
+
+#[component]
 fn ActivityHeatmap(
     logged_activites_by_day: ReadSignal<Option<ActivityLogRange>>
 ) -> impl IntoView {
@@ -82,7 +126,7 @@ fn ActivityHeatmap(
             {
                 move || {
                     logged_activites_by_day.get().map(|logged_activities| {
-                        let amount_of_days = (logged_activities.to() - logged_activities.from()).num_days() + 1;
+                        let amount_of_days = logged_activities.total_days();
 
                         (0..amount_of_days).map(|day_offset| {
                             let day = logged_activities.from() + Duration::days(day_offset);
