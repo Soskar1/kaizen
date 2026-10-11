@@ -630,3 +630,136 @@ button {
     color: #181713;
     font-size: 22px;
 }
+/* ---------- Welcome card (no activity selected) ---------- */
+
+.welcome-card {
+    min-height: 350px;
+    padding: 36px;
+
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 32px;
+
+    background: white;
+    border: 2px solid #eee0c4;
+    border-radius: 22px;
+    box-shadow: 0 6px 0 #f1e8d6;
+}
+
+.welcome-content {
+    max-width: 520px;
+}
+
+.welcome-content .label {
+    color: #087936;
+}
+
+.welcome-card h2 {
+    margin: 14px 0 10px;
+
+    color: #171510;
+    font-size: 34px;
+    line-height: 1.15;
+}
+
+.welcome-description {
+    margin: 0 0 28px;
+
+    color: #5c5143;
+    font-size: 16px;
+    line-height: 1.5;
+}
+
+.welcome-add-button {
+    display: inline-flex;
+}
+
+.welcome-add-button:focus-visible {
+    outline: 3px solid rgb(16 133 65 / 25%);
+    outline-offset: 3px;
+}
+
+.welcome-illustration {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.welcome-tiles {
+    display: grid;
+    grid-template-columns: repeat(7, 22px);
+    gap: 6px;
+
+    padding: 22px;
+
+    background: #fffaf2;
+    border: 2px solid #eee0c4;
+    border-radius: 18px;
+}
+
+.welcome-tile {
+    width: 22px;
+    height: 22px;
+    border-radius: 5px;
+}
+
+@media (max-width: 900px) {
+    .welcome-card {
+        grid-template-columns: 1fr;
+    }
+
+    .welcome-illustration {
+        display: none;
+    }
+}
+
+@media (max-width: 650px) {
+    .welcome-card {
+        padding: 28px 22px;
+    }
+
+    .welcome-add-button {
+        width: 100%;
+    }
+}
+
+/* ---------- Empty states (CSS only) ---------- */
+
+/* Hide the activity pill on the timer card when its text is empty */
+.category:empty {
+    display: none;
+}
+
+/* Heatmap header and grid when no logs are loaded */
+.heatmap-total:empty::before {
+    content: "No activity selected";
+    color: #5c5143;
+    font-size: 15px;
+    font-weight: 700;
+}
+
+.heatmap:empty {
+    width: 100%;
+    min-height: 116px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border: 2px dashed #eee0c4;
+    border-radius: 12px;
+}
+
+.heatmap:empty::before {
+    content: "Your yearly history will appear here once you pick an activity.";
+    padding: 0 16px;
+
+    color: #8a7d68;
+    font-size: 14px;
+    text-align: center;
+}
+
+.heatmap-content:has(.heatmap:empty) .weekday-labels {
+    display: none;
+}
