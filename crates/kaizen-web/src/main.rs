@@ -16,6 +16,7 @@ use crate::presentation::card::Card;
 use crate::presentation::new_activity_tab::NewActivityCard;
 use crate::presentation::statistics::Statistics;
 use crate::presentation::timer_card::TimerCard;
+use crate::presentation::welcome_card::WelcomeCard;
 
 fn main() {
     console_error_panic_hook::set_once();
@@ -27,7 +28,7 @@ fn App() -> impl IntoView {
     let (activities, set_activities) = signal(Vec::<String>::new());
     let (selected_activity, set_selected_activity) = signal(String::new());
     let (logged_activites_by_day, set_logged_activites_by_day) = signal(None::<ActivityLogRange>);
-    let (current_card, set_current_card) = signal(Card::Timer);
+    let (current_card, set_current_card) = signal(Card::Welcome);
     
     let on_activity_add = on_activity_add(set_selected_activity, set_current_card);
     let on_activity_change = on_activity_change(set_current_card, set_selected_activity, set_logged_activites_by_day);
@@ -86,7 +87,13 @@ fn App() -> impl IntoView {
                                 <NewActivityCard set_activities=set_activities/>
                             }
                             .into_any()
-                        }
+                        },
+                        Card::Welcome => {
+                            view! {
+                                <WelcomeCard on_activity_add=on_activity_add/>
+                            }
+                            .into_any()
+                        },
                     }
                 }
 
