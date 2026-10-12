@@ -15,6 +15,7 @@ use crate::presentation::activity_heatmap_card::ActivityHeatmapCard;
 use crate::presentation::card::Card;
 use crate::presentation::new_activity_tab::NewActivityCard;
 use crate::presentation::statistics::Statistics;
+use crate::presentation::streak_card::StreakCard;
 use crate::presentation::timer_card::TimerCard;
 use crate::presentation::welcome_card::WelcomeCard;
 
@@ -56,8 +57,9 @@ fn App() -> impl IntoView {
         <main class="page">
             <header class="header">
                 <h1>"One small thing, every day"</h1>
-                <div class="streak">"🔥 41 day streak"</div>
             </header>
+
+            <StreakCard/>
 
             <ActivitiesTab 
                 activities=activities

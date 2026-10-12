@@ -30,13 +30,6 @@ button {
     font-size: 16px;
 }
 
-.streak {
-    padding: 12px 24px;
-    border: 2px solid #ffbd4a;
-    border-radius: 999px;
-    font-weight: 700;
-}
-
 .activities button {
     padding: 14px 24px;
     border: 2px solid #eadfc9;
@@ -788,4 +781,196 @@ button {
 
 .heatmap-content:has(.heatmap:empty) .month-labels {
     display: none;
+}
+
+/* ---------- Day streak card ---------- */
+
+.streak-card {
+    margin-top: 28px;
+    padding: 24px 40px;
+
+    display: grid;
+    grid-template-columns: auto 1fr minmax(220px, 260px);
+    align-items: center;
+    gap: 32px;
+
+    background: #fff4e0;
+    border: 2px solid #ffd58a;
+    border-radius: 22px;
+    box-shadow: 0 6px 0 #fbe2b3;
+}
+
+.streak-summary {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.streak-flame {
+    width: 44px;
+    height: 50px;
+    margin-right: 6px;
+}
+
+.streak-flame-outer {
+    fill: #d9cbb4;
+}
+
+.streak-flame-inner {
+    fill: #f4ede1;
+}
+
+.streak-count {
+    color: #8a7f72;
+    font-size: 64px;
+    font-weight: 900;
+    line-height: 1;
+    letter-spacing: -0.04em;
+}
+
+.streak-title {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.streak-title-main {
+    color: #181713;
+    font-size: 20px;
+    font-weight: 800;
+}
+
+.streak-title-sub {
+    color: #5c5143;
+    font-size: 13px;
+}
+
+.streak-week {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+
+    display: flex;
+    justify-content: center;
+    gap: 14px;
+}
+
+.streak-day {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+
+.streak-day-circle {
+    width: 40px;
+    height: 40px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    background: #fbe7c4;
+    border-radius: 50%;
+}
+
+.streak-day.done .streak-day-circle {
+    background: #ffb340;
+}
+
+.streak-day.today .streak-day-circle {
+    background: white;
+    border: 2px dashed #e09a2c;
+}
+
+.streak-day-circle svg {
+    width: 18px;
+    height: 18px;
+
+    fill: none;
+    stroke: #5a3a0c;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.streak-day-label {
+    color: #5c5143;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.streak-day.today .streak-day-label {
+    color: #181713;
+    font-weight: 800;
+}
+
+.streak-goal {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.streak-goal-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+}
+
+.streak-goal-title {
+    color: #181713;
+    font-size: 15px;
+    font-weight: 800;
+}
+
+.streak-goal-count {
+    color: #5c5143;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.streak-progress {
+    height: 12px;
+    overflow: hidden;
+
+    background: #fbe2b3;
+    border-radius: 999px;
+}
+
+.streak-progress-fill {
+    height: 100%;
+
+    background: #ff9f1c;
+    border-radius: 999px;
+}
+
+.streak-warning {
+    color: #a3311c;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+@media (max-width: 1000px) {
+    .streak-card {
+        grid-template-columns: 1fr;
+        justify-items: center;
+        padding: 24px;
+        gap: 24px;
+    }
+
+    .streak-goal {
+        width: 100%;
+        max-width: 420px;
+    }
+}
+
+@media (max-width: 500px) {
+    .streak-week {
+        gap: 8px;
+    }
+
+    .streak-day-circle {
+        width: 34px;
+        height: 34px;
+    }
 }
