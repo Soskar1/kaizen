@@ -950,6 +950,33 @@ button {
     font-weight: 700;
 }
 
+/* Inactive streak card (no activity selected) */
+.streak-card.inactive {
+    background: #f7f3ec;
+    border-color: #e6dccb;
+    border-style: dashed;
+    box-shadow: 0 6px 0 #eee5d6;
+}
+
+.streak-card.inactive > * {
+    filter: grayscale(1);
+    opacity: 0.55;
+}
+
+.streak-card.inactive .streak-day-circle {
+    background: #efe6d6;
+    border: none;
+}
+
+.streak-card.inactive .streak-day-circle svg,
+.streak-card.inactive .streak-progress-fill {
+    display: none;
+}
+
+.streak-card.inactive .streak-warning {
+    color: #5c5143;
+}
+
 @media (max-width: 1000px) {
     .streak-card {
         grid-template-columns: 1fr;

@@ -1,9 +1,13 @@
 use leptos::prelude::*;
 
 #[component]
-pub fn StreakCard() -> impl IntoView {
+pub fn StreakCard(
+    #[prop(into)] selected_activity: Signal<String>
+) -> impl IntoView {
+    let inactive = move || selected_activity.with(|activity| activity.is_empty());
+
     view! {
-        <article class="streak-card">
+        <article class="streak-card" class:inactive=inactive aria-disabled=move || inactive().to_string()>
             <div class="streak-summary">
                 <svg class="streak-flame" viewBox="0 0 32 36" aria-hidden="true">
                     <path
@@ -16,11 +20,13 @@ pub fn StreakCard() -> impl IntoView {
                     />
                 </svg>
 
-                <strong class="streak-count">"41"</strong>
+                <strong class="streak-count">{move || if inactive() { "0" } else { "41" }}</strong>
 
                 <div class="streak-title">
                     <span class="streak-title-main">"day streak"</span>
-                    <span class="streak-title-sub">"any activity · best 112"</span>
+                    <span class="streak-title-sub">
+                        {move || if inactive() { "pick an activity to start" } else { "any activity · best 112" }}
+                    </span>
                 </div>
             </div>
 
@@ -50,7 +56,9 @@ pub fn StreakCard() -> impl IntoView {
                     <div class="streak-progress-fill" style="width: 82%"></div>
                 </div>
 
-                <span class="streak-warning">"Nothing logged today · 4h 20m left"</span>
+                <span class="streak-warning">
+                    {move || if inactive() { "No activity selected" } else { "Nothing logged today · 4h 20m left" }}
+                </span>
             </div>
         </article>
     }

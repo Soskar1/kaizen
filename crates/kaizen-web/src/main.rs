@@ -59,7 +59,7 @@ fn App() -> impl IntoView {
                 <h1>"One small thing, every day"</h1>
             </header>
 
-            <StreakCard/>
+            <StreakCard selected_activity=selected_activity/>
 
             <ActivitiesTab 
                 activities=activities
