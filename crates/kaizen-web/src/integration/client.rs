@@ -17,14 +17,12 @@ pub enum ServerError {
     FailedRequest(u16)
 }
 
-const BASE_ADDRESS: &'static str = "http://127.0.0.1:3000";
-
 fn get_activities_address() -> String {
-    format!("{}/activities", BASE_ADDRESS)
+    format!("/activities")
 }
 
 fn get_logs_address(activity_name: &str) -> String {
-    format!("{}/activities/{}/logs", BASE_ADDRESS, activity_name)
+    format!("/activities/{}/logs", activity_name)
 }
 
 pub async fn get_activities() -> Result<Vec<String>, ServerError> {

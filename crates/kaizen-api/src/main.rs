@@ -1,14 +1,24 @@
 use std::{env, fs, io};
 use std::path::{Component, Path, PathBuf};
 use axum::extract::{Path as UriPath, Query, State};
+use axum::response::{IntoResponse, Response};
 use axum::{routing::get, Router, Json};
-use axum::http::{HeaderValue, Method, StatusCode};
+use axum::http::{StatusCode, Uri};
 use axum::http::header::CONTENT_TYPE;
 use chrono::{NaiveDate};
 use kaizen_core::activity::{get_day_log_range, log_activity};
 use kaizen_core::day_log::DayLog;
+use rust_embed::RustEmbed;
 use serde::Deserialize;
-use tower_http::cors::CorsLayer;
+
+const ADDRESS: &str = "127.0.0.1:3000";
+
+// Built web app (`trunk build --release` in crates/kaizen-web).
+// Embedded into release builds, read from disk in debug builds.
+#[derive(RustEmbed)]
+#[folder = "../kaizen-web/dist/"]
+#[allow_missing = true]
+struct WebAssets;
 
 #[derive(Clone)]
 struct AppState {
@@ -23,24 +33,32 @@ async fn main() -> io::Result<()> {
         activities_directory,
     };
 
-    let allowed_origins = [
-        HeaderValue::from_static("http://127.0.0.1:8080"),
-        HeaderValue::from_static("http://[::1]:8080")
-    ];
-
-    let cors = CorsLayer::new()
-        .allow_methods([Method::GET, Method::POST])
-        .allow_origin(allowed_origins)
-        .allow_headers([CONTENT_TYPE]);
+    if WebAssets::get("index.html").is_none() {
+        eprintln!("Web app is missing. Build it with `trunk build --release` in crates/kaizen-web.");
+    }
 
     let app = Router::new()
         .route("/activities", get(get_activities).post(post_activities))
         .route("/activities/{activity_name}/logs", get(get_time).post(post_time))
-        .layer(cors)
+        .fallback(get_web_asset)
         .with_state(state);
 
-    let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await?;
+    let listener = tokio::net::TcpListener::bind(ADDRESS).await?;
+    println!("Kaizen is running at http://{ADDRESS}");
+
     axum::serve(listener, app).await
+}
+
+async fn get_web_asset(uri: Uri) -> Response {
+    let path = match uri.path().trim_start_matches('/') {
+        "" => "index.html",
+        path => path
+    };
+
+    match WebAssets::get(path) {
+        Some(file) => ([(CONTENT_TYPE, file.metadata.mimetype())], file.data).into_response(),
+        None => StatusCode::NOT_FOUND.into_response()
+    }
 }
 
 async fn get_activities(State(state): State<AppState>) -> Result<Json<Vec<String>>, StatusCode> {

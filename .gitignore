@@ -1,2 +1,5 @@
 /target
 /crates/kaizen-web/dist
+.vscode/
+.idea/
+.claude
