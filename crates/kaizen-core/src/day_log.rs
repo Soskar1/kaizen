@@ -15,6 +15,10 @@ impl DayLog {
         }
     }
 
+    pub fn date(&self) -> NaiveDate {
+        self.date
+    }
+
     pub fn activity_duration(&self) -> u64 {
         self.activity_duration_in_seconds
     }

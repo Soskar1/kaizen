@@ -3,12 +3,15 @@ mod application;
 mod presentation;
 mod integration;
 
+use std::collections::HashMap;
+
 use chrono::{Datelike, Duration, Local, NaiveDate};
 use leptos::prelude::*;
 use leptos::task::spawn_local;
 use crate::application::activity::{collect_logs, try_log_activity_time};
 use crate::application::timer::Timer;
 use crate::domain::activity_log_range::ActivityLogRange;
+use crate::domain::activity_streak::ActivityStreak;
 use crate::integration::client::get_activities;
 use crate::presentation::activities_tab::ActivitiesTab;
 use crate::presentation::activity_heatmap_card::ActivityHeatmapCard;
@@ -29,10 +32,11 @@ fn App() -> impl IntoView {
     let (activities, set_activities) = signal(Vec::<String>::new());
     let (selected_activity, set_selected_activity) = signal(String::new());
     let (logged_activites_by_day, set_logged_activites_by_day) = signal(None::<ActivityLogRange>);
+    let (activity_streaks, set_activity_streaks) = signal(HashMap::<String, ActivityStreak>::new());
     let (current_card, set_current_card) = signal(Card::Welcome);
-    
+
     let on_activity_add = on_activity_add(set_selected_activity, set_current_card);
-    let on_activity_change = on_activity_change(set_current_card, set_selected_activity, set_logged_activites_by_day);
+    let on_activity_change = on_activity_change(set_current_card, set_selected_activity, set_logged_activites_by_day, set_activity_streaks);
 
     let (timer, set_timer) = signal(Timer::new());
 
@@ -44,11 +48,17 @@ fn App() -> impl IntoView {
         set_timer.update(|timer| timer.pause());
     });
 
-    let stop_timer = stop_timer(timer, set_timer, selected_activity, set_logged_activites_by_day);
+    let stop_timer = stop_timer(timer, set_timer, selected_activity, set_logged_activites_by_day, set_activity_streaks);
 
     spawn_local(async move {
             match get_activities().await {
-            Ok(activities) => { set_activities.set(activities); }
+            Ok(activities) => {
+                for activity_name in &activities {
+                    refresh_streak(activity_name.clone(), set_activity_streaks);
+                }
+
+                set_activities.set(activities);
+            }
             Err(error) => {leptos::logging::error!("Failed to get activities: {}", error); }
         }
     });
@@ -59,11 +69,12 @@ fn App() -> impl IntoView {
                 <h1>"One small thing, every day"</h1>
             </header>
 
-            <StreakCard selected_activity=selected_activity/>
+            <StreakCard selected_activity=selected_activity logged_activites_by_day=logged_activites_by_day/>
 
             <ActivitiesTab 
                 activities=activities
                 selected_activity=selected_activity
+                activity_streaks=activity_streaks
                 on_activity_add=on_activity_add
                 on_activity_change=on_activity_change
                 timer=timer
@@ -110,31 +121,67 @@ fn App() -> impl IntoView {
 fn on_activity_change(
     set_current_card: WriteSignal<Card>,
     set_selected_activity: WriteSignal<String>,
-    set_logged_activites_by_day: WriteSignal<Option<ActivityLogRange>>
+    set_logged_activites_by_day: WriteSignal<Option<ActivityLogRange>>,
+    set_activity_streaks: WriteSignal<HashMap<String, ActivityStreak>>
 ) -> Callback<String> {
     Callback::new(move |activity_name: String| {
         set_selected_activity.set(activity_name.clone());
         set_current_card.set(Card::Timer);
-        refresh_logs(activity_name, set_logged_activites_by_day);
+        refresh_logs(activity_name, set_logged_activites_by_day, set_activity_streaks);
     })
 }
 
 fn refresh_logs(
     activity_name: String,
-    set_logged_activites_by_day: WriteSignal<Option<ActivityLogRange>>
+    set_logged_activites_by_day: WriteSignal<Option<ActivityLogRange>>,
+    set_activity_streaks: WriteSignal<HashMap<String, ActivityStreak>>
 ) {
-    let current_week_start = get_current_week_start();
-    let from = current_week_start - Duration::weeks(52);
-    let to = from + Duration::days(370);
+    let (from, to) = get_logs_range();
 
     spawn_local(async move {
         match collect_logs(&activity_name, from, to).await {
-            Some(logs) => set_logged_activites_by_day.set(Some(logs)),
+            Some(logs) => {
+                update_streak(activity_name, &logs, set_activity_streaks);
+                set_logged_activites_by_day.set(Some(logs));
+            }
             None => {
                 leptos::logging::error!("No logs received in range from {} to {}.", from, to);
             }
         }
     });
+}
+
+fn refresh_streak(
+    activity_name: String,
+    set_activity_streaks: WriteSignal<HashMap<String, ActivityStreak>>
+) {
+    let (from, to) = get_logs_range();
+
+    spawn_local(async move {
+        match collect_logs(&activity_name, from, to).await {
+            Some(logs) => update_streak(activity_name, &logs, set_activity_streaks),
+            None => {
+                leptos::logging::error!("No logs received in range from {} to {}.", from, to);
+            }
+        }
+    });
+}
+
+fn update_streak(
+    activity_name: String,
+    logs: &ActivityLogRange,
+    set_activity_streaks: WriteSignal<HashMap<String, ActivityStreak>>
+) {
+    let streak = ActivityStreak::new(logs, Local::now().date_naive());
+    set_activity_streaks.update(|streaks| { streaks.insert(activity_name, streak); });
+}
+
+fn get_logs_range() -> (NaiveDate, NaiveDate) {
+    let current_week_start = get_current_week_start();
+    let from = current_week_start - Duration::weeks(52);
+    let to = from + Duration::days(370);
+
+    (from, to)
 }
 
 pub fn get_current_week_start() -> NaiveDate {
@@ -156,7 +203,8 @@ fn stop_timer(
     timer: ReadSignal<Timer>,
     set_timer: WriteSignal<Timer>,
     selected_activity: ReadSignal<String>,
-    set_logged_activites_by_day: WriteSignal<Option<ActivityLogRange>>
+    set_logged_activites_by_day: WriteSignal<Option<ActivityLogRange>>,
+    set_activity_streaks: WriteSignal<HashMap<String, ActivityStreak>>
 ) -> Callback<()> {
     Callback::new(move |()| {
         let elapsed_seconds = timer.with_untracked(|timer| timer.elapsed_seconds());
@@ -174,7 +222,7 @@ fn stop_timer(
                 return;
             }
 
-            refresh_logs(activity_name, set_logged_activites_by_day);
+            refresh_logs(activity_name, set_logged_activites_by_day, set_activity_streaks);
         });
     })
 }

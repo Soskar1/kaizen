@@ -6,10 +6,13 @@ body {
     margin: 0;
     color: #181713;
     background: #fffaf2;
-    font-family: Arial, sans-serif;
+    font-family: "Fredoka", Arial, sans-serif;
 }
 
-button {
+button,
+input,
+textarea,
+select {
     font: inherit;
     cursor: pointer;
 }
@@ -87,10 +90,65 @@ button {
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    gap: 10px;
 
+    white-space: nowrap;
+}
+
+.activity-name {
+    min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
-    white-space: nowrap;
+}
+
+/* Week streak pill inside activity buttons */
+.activity-streak-pill {
+    flex: 0 0 auto;
+
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+
+    padding: 3px 9px 3px 7px;
+
+    color: #8a7f72;
+    background: #f4ece0;
+    border-radius: 999px;
+
+    font-size: 13px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.2;
+}
+
+.activity-streak-flame {
+    width: 11px;
+    height: 13px;
+}
+
+.activity-streak-flame-outer {
+    fill: #cbbfae;
+}
+
+.activity-streak-flame-inner {
+    fill: #f4ede1;
+}
+
+.activity-streak-pill.lit {
+    color: #b85a00;
+    background: #fde9c4;
+}
+
+.activity-streak-pill.lit .activity-streak-flame-outer {
+    fill: #ff7a1a;
+}
+
+.activity-streak-pill.lit .activity-streak-flame-inner {
+    fill: #ffd23f;
+}
+
+.activities button.active .activity-streak-pill {
+    background: white;
 }
 
 .activities .add-activity-button {
@@ -783,14 +841,15 @@ button {
     display: none;
 }
 
-/* ---------- Day streak card ---------- */
+/* ---------- Week streak card ---------- */
 
 .streak-card {
     margin-top: 28px;
     padding: 24px 40px;
 
     display: grid;
-    grid-template-columns: auto 1fr minmax(220px, 260px);
+    /* Equal side columns keep the week centered regardless of the streak number width */
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
     align-items: center;
     gap: 32px;
 
@@ -826,6 +885,62 @@ button {
     font-weight: 900;
     line-height: 1;
     letter-spacing: -0.04em;
+
+    /* Fixed-width digits and room for two of them keep the title from shifting */
+    font-variant-numeric: tabular-nums;
+    min-width: 2ch;
+    text-align: center;
+}
+
+/* Lit streak (current streak above zero) */
+.streak-summary.lit .streak-flame {
+    filter:
+        drop-shadow(0 0 6px rgba(255, 140, 26, 0.65))
+        drop-shadow(0 0 14px rgba(255, 90, 31, 0.35));
+    transform-origin: 50% 100%;
+    animation: streak-flame-flicker 2.4s ease-in-out infinite;
+}
+
+.streak-summary.lit .streak-flame-outer {
+    fill: url(#streak-flame-outer-gradient);
+}
+
+.streak-summary.lit .streak-flame-inner {
+    fill: url(#streak-flame-inner-gradient);
+}
+
+.streak-summary.lit .streak-count {
+    color: #ff6a1a;
+    background: linear-gradient(180deg, #ffb627 0%, #ff7a1a 55%, #e8381c 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    /* Gradient is clipped to the box; extend it so glyph overhang isn't cut off */
+    padding-right: 0.1em;
+    margin-right: -0.1em;
+    filter:
+        drop-shadow(0 0 8px rgba(255, 140, 26, 0.55))
+        drop-shadow(0 0 18px rgba(255, 90, 31, 0.3));
+}
+
+@keyframes streak-flame-flicker {
+    0%, 100% {
+        transform: scale(1) rotate(0deg);
+    }
+
+    30% {
+        transform: scale(1.04, 0.97) rotate(-1.5deg);
+    }
+
+    60% {
+        transform: scale(0.97, 1.04) rotate(1.5deg);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .streak-summary.lit .streak-flame {
+        animation: none;
+    }
 }
 
 .streak-title {
@@ -883,6 +998,12 @@ button {
     border: 2px dashed #e09a2c;
 }
 
+/* Logged today looks like any other logged day */
+.streak-day.today.done .streak-day-circle {
+    background: #ffb340;
+    border: none;
+}
+
 .streak-day-circle svg {
     width: 18px;
     height: 18px;
@@ -906,6 +1027,10 @@ button {
 }
 
 .streak-goal {
+    width: 100%;
+    max-width: 260px;
+    justify-self: end;
+
     display: flex;
     flex-direction: column;
     gap: 10px;
@@ -986,8 +1111,8 @@ button {
     }
 
     .streak-goal {
-        width: 100%;
         max-width: 420px;
+        justify-self: center;
     }
 }
 
