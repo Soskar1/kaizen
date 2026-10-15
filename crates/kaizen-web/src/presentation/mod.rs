@@ -6,3 +6,4 @@ pub mod statistics;
 pub mod activity_heatmap_card;
 mod text_formattings;
 pub mod welcome_card;
+pub mod streak_card;

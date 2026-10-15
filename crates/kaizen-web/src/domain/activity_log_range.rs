@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use chrono::{NaiveDate};
+use kaizen_core::day_log::DayLog;
 
 #[derive(Clone)]
 pub struct ActivityLogRange {
@@ -52,6 +53,13 @@ impl ActivityLogRange {
             .copied()
             .max()
             .unwrap_or_default()
+    }
+
+    pub fn day_logs(&self) -> Vec<DayLog> {
+        self.logs
+            .iter()
+            .map(|(date, duration)| DayLog::new(*date, *duration))
+            .collect()
     }
 }
 
@@ -244,5 +252,22 @@ mod tests {
 
         // Assert
         assert_eq!(result, 0);
+    }
+
+    #[test]
+    fn day_logs_returns_log_for_each_logged_date() {
+        // Arrange
+        let logs = create_activity_log_range();
+
+        // Act
+        let mut result: Vec<(NaiveDate, u64)> = logs
+            .day_logs()
+            .iter()
+            .map(|day_log| (day_log.date(), day_log.activity_duration()))
+            .collect();
+        result.sort();
+
+        // Assert
+        assert_eq!(result, vec![(date(20), 60), (date(21), 120), (date(23), 180), (date(25), 240)]);
     }
 }
