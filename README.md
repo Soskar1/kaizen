@@ -1,5 +1,10 @@
 # Kaizen
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="resources/samurai-dark.png">
+  <img src="resources/samurai.png" alt="Samurai silhouette" width="180" align="right">
+</picture>
+
 **One small thing, every day.**
 
 Kaizen is a small, local habit tracker. Pick the activities you want to get better at, run a timer while you work on them, and watch your progress build up on a heatmap and a weekly streak.
